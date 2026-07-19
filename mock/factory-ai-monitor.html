@@ -112,59 +112,59 @@
   .topbar {
     display: flex;
     align-items: center;
-    gap: 16px;
-    padding: 10px 20px;
+    gap: 24px;
+    padding: 16px 24px;
     background: var(--surface);
     border-bottom: 1px solid var(--border);
   }
-  .brand { display: flex; align-items: center; gap: 10px; }
+  .brand { display: flex; align-items: center; gap: 16px; }
   .brand-mark {
-    width: 32px; height: 32px;
-    border-radius: 7px;
+    width: 64px; height: 64px;
+    border-radius: 13px;
     background: linear-gradient(160deg, var(--accent), var(--accent-strong));
     display: grid; place-items: center;
-    color: #fff; font-weight: 800; font-size: 13px; letter-spacing: 0.02em;
+    color: #fff; font-weight: 800; font-size: 24px; letter-spacing: 0.02em;
     flex: none;
   }
-  .brand-text { line-height: 1.15; }
-  .brand-text .product { font-weight: 800; font-size: 15px; letter-spacing: -0.01em; }
-  .brand-text .company { font-size: 11px; color: var(--ink-muted); }
+  .brand-text { line-height: 1.2; }
+  .brand-text .product { font-weight: 800; font-size: 28px; letter-spacing: -0.01em; }
+  .brand-text .company { font-size: 20px; color: var(--ink-muted); }
   .breadcrumb {
-    font-size: 12.5px; color: var(--ink-muted);
-    padding-left: 16px; margin-left: 4px;
+    font-size: 22px; color: var(--ink-muted);
+    padding-left: 22px; margin-left: 4px;
     border-left: 1px solid var(--border);
     white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
   }
   .breadcrumb b { color: var(--ink); font-weight: 600; }
   .topbar-spacer { flex: 1; }
   .overall-pill {
-    display: flex; align-items: center; gap: 7px;
-    font-size: 12.5px; font-weight: 700;
-    padding: 6px 12px; border-radius: 100px;
+    display: flex; align-items: center; gap: 10px;
+    font-size: 22px; font-weight: 700;
+    padding: 10px 20px; border-radius: 100px;
     background: var(--success-soft); color: var(--success);
     transition: background .3s, color .3s;
   }
   .overall-pill.critical { background: var(--critical-soft); color: var(--critical); }
-  .overall-pill .dot { width: 7px; height: 7px; border-radius: 50%; background: currentColor; }
+  .overall-pill .dot { width: 12px; height: 12px; border-radius: 50%; background: currentColor; }
   .overall-pill.critical .dot { animation: blink-dot 1s infinite; }
   .clock {
     font-family: var(--font-mono); font-variant-numeric: tabular-nums;
-    font-size: 12.5px; color: var(--ink-muted);
-    padding-left: 14px; border-left: 1px solid var(--border);
+    font-size: 22px; color: var(--ink-muted);
+    padding-left: 20px; border-left: 1px solid var(--border);
   }
   .user-chip {
-    display: flex; align-items: center; gap: 8px;
-    padding-left: 14px; border-left: 1px solid var(--border);
-    font-size: 12.5px;
+    display: flex; align-items: center; gap: 12px;
+    padding-left: 20px; border-left: 1px solid var(--border);
+    font-size: 22px;
   }
   .user-avatar {
-    width: 22px; height: 22px; border-radius: 50%;
+    width: 40px; height: 40px; border-radius: 50%;
     background: var(--surface-2); border: 1px solid var(--border);
-    display: grid; place-items: center; font-size: 10px; font-weight: 700; color: var(--ink-muted);
+    display: grid; place-items: center; font-size: 17px; font-weight: 700; color: var(--ink-muted);
   }
   .reset-btn {
     border: 1px solid var(--border); background: var(--surface-2); color: var(--ink-muted);
-    font-size: 11.5px; font-weight: 600; padding: 6px 10px; border-radius: 6px; cursor: pointer;
+    font-size: 18px; font-weight: 600; padding: 10px 16px; border-radius: 8px; cursor: pointer;
   }
   .reset-btn:hover { color: var(--ink); border-color: var(--accent); }
 
