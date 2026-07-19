@@ -170,6 +170,33 @@
 
   @keyframes blink-dot { 0%, 100% { opacity: 1; } 50% { opacity: 0.25; } }
 
+  /* ---------- Line tabs ---------- */
+  .line-tabs {
+    display: flex; align-items: center; gap: 10px;
+    padding: 10px 24px;
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    overflow-x: auto;
+  }
+  .line-tab {
+    display: flex; align-items: center; gap: 12px;
+    padding: 10px 20px; border-radius: 9px;
+    border: 1px solid var(--border); background: var(--surface-2);
+    cursor: pointer; text-align: left; color: var(--ink-muted);
+    transition: background .15s, border-color .15s, color .15s;
+  }
+  .line-tab:hover { color: var(--ink); border-color: color-mix(in srgb, var(--accent) 40%, var(--border)); }
+  .line-tab.active {
+    background: var(--accent-soft); color: var(--accent-strong);
+    border-color: color-mix(in srgb, var(--accent) 45%, transparent);
+  }
+  .line-tab:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  .tab-dot { width: 10px; height: 10px; border-radius: 50%; background: var(--success); flex: none; }
+  .tab-dot.critical { background: var(--critical); animation: blink-dot 1s infinite; }
+  .tab-text { display: flex; flex-direction: column; line-height: 1.3; }
+  .tab-facility { font-size: 15px; font-weight: 600; opacity: 0.8; }
+  .tab-line { font-size: 22px; font-weight: 800; }
+
   /* ---------- Monitor strip ---------- */
   .monitor-strip {
     display: grid;
@@ -207,6 +234,10 @@
   .mrow { display: flex; justify-content: space-between; align-items: baseline; font-size: 20px; color: var(--ink-muted); padding: 4px 0; gap: 10px; }
   .mrow .v { font-family: var(--font-mono); font-variant-numeric: tabular-nums; color: var(--ink); font-weight: 600; }
   .mcard.critical .mrow .v.flag { color: var(--critical); }
+
+  /* ---------- Line screen (per-line monitor strip + stage) ---------- */
+  .line-screen { display: grid; grid-template-rows: auto 1fr; min-height: 0; }
+  .line-screen[hidden] { display: none; }
 
   /* ---------- Main stage ---------- */
   .stage {
@@ -287,6 +318,7 @@
     transition: max-height .4s ease;
     border-bottom: 1px solid var(--border);
   }
+  .proposal[hidden] { display: none; }
   .proposal.open { max-height: 460px; }
   .proposal-inner { padding: 20px 24px 22px; display: flex; gap: 20px; }
   .proposal-stripe { width: 4px; border-radius: 4px; background: var(--critical); flex: none; }
@@ -338,7 +370,7 @@
 
   @media (prefers-reduced-motion: reduce) {
     .flow-dot, .station.critical .node, .overall-pill.critical .dot, .mcard.critical .mcard-status,
-    .mascot-wrap.alert .mascot-ring, .mascot-wrap.busy .mascot-ring, .dock-name .live-dot { animation: none !important; }
+    .mascot-wrap.alert .mascot-ring, .mascot-wrap.busy .mascot-ring, .dock-name .live-dot, .tab-dot.critical { animation: none !important; }
   }
 
   /* ---------- Login ---------- */
@@ -409,7 +441,7 @@
       <input id="f-pass" type="password" value="••••••••" />
     </div>
     <button class="login-submit" type="submit">ログイン</button>
-    <p class="login-note">これはデモ用モックです。入力内容に関わらずログインできます。<br>ログイン後、約10秒で監視シナリオが自動的に開始します。</p>
+    <p class="login-note">これはデモ用モックです。入力内容に関わらずログインできます。<br>ログイン後、加工ライン3で約10秒後に監視シナリオが開始します。加工ライン1のタブを開くと、そちらのシナリオも開始します。</p>
   </form>
 </div>
 
@@ -422,57 +454,116 @@
         <div class="company">株式会社テクノプロ</div>
       </div>
     </div>
-    <div class="breadcrumb"><b>サンプル精密工業株式会社</b> / 第2工場 / 加工ライン3</div>
+    <div class="breadcrumb" id="breadcrumb"><b>サンプル精密工業株式会社</b> / 第2工場 / 加工ライン3</div>
     <div class="topbar-spacer"></div>
     <div class="overall-pill" id="overall-pill"><span class="dot"></span><span id="overall-text">全項目 正常稼働中</span></div>
     <div class="clock" id="clock">--:--:--</div>
     <div class="user-chip"><div class="user-avatar">山</div>山田 健太</div>
-    <button class="reset-btn" id="reset-btn" type="button">デモをリセット</button>
+    <button class="reset-btn" id="reset-btn" type="button" title="表示中のラインをリセットします">デモをリセット</button>
   </header>
 
-  <section class="monitor-strip" id="monitor-strip"></section>
+  <nav class="line-tabs" id="line-tabs">
+    <button class="line-tab active" type="button" data-line="line3">
+      <span class="tab-dot" data-line="line3"></span>
+      <span class="tab-text"><span class="tab-facility">第2工場</span><span class="tab-line">加工ライン3</span></span>
+    </button>
+    <button class="line-tab" type="button" data-line="line1">
+      <span class="tab-dot" data-line="line1"></span>
+      <span class="tab-text"><span class="tab-facility">第3工場</span><span class="tab-line">加工ライン1</span></span>
+    </button>
+  </nav>
 
-  <section class="stage">
-    <div class="panel">
-      <div class="panel-head">
-        <h2>生産ライン模式図</h2>
-        <span class="sub">加工ライン3 ― 投入から完成検査まで</span>
+  <!-- ===== 第2工場 加工ライン3 ===== -->
+  <div class="line-screen" data-line-screen="line3">
+    <section class="monitor-strip"></section>
+    <section class="stage">
+      <div class="panel">
+        <div class="panel-head">
+          <h2>生産ライン模式図</h2>
+          <span class="sub">加工ライン3 ― 投入から完成検査まで</span>
+        </div>
+        <div class="line-body">
+          <div class="rail"></div>
+          <div class="flow-dot" style="animation-delay:0s"></div>
+          <div class="flow-dot" style="animation-delay:0.7s"></div>
+          <div class="flow-dot" style="animation-delay:1.4s"></div>
+          <div class="flow-dot" style="animation-delay:2.1s"></div>
+          <div class="flow-dot" style="animation-delay:2.8s"></div>
+          <div class="stations"></div>
+        </div>
       </div>
-      <div class="line-body">
-        <div class="rail"></div>
-        <div class="flow-dot" style="animation-delay:0s"></div>
-        <div class="flow-dot" style="animation-delay:0.7s"></div>
-        <div class="flow-dot" style="animation-delay:1.4s"></div>
-        <div class="flow-dot" style="animation-delay:2.1s"></div>
-        <div class="flow-dot" style="animation-delay:2.8s"></div>
-        <div class="stations" id="stations"></div>
+      <div class="panel">
+        <div class="panel-head">
+          <h2>イベントログ</h2>
+          <span class="sub">リアルタイム</span>
+        </div>
+        <div class="log-body"></div>
       </div>
-    </div>
+    </section>
+  </div>
 
-    <div class="panel">
-      <div class="panel-head">
-        <h2>イベントログ</h2>
-        <span class="sub">リアルタイム</span>
+  <!-- ===== 第3工場 加工ライン1 ===== -->
+  <div class="line-screen" data-line-screen="line1" hidden>
+    <section class="monitor-strip"></section>
+    <section class="stage">
+      <div class="panel">
+        <div class="panel-head">
+          <h2>生産ライン模式図</h2>
+          <span class="sub">加工ライン1 ― 資材投入から完成検査まで</span>
+        </div>
+        <div class="line-body">
+          <div class="rail"></div>
+          <div class="flow-dot" style="animation-delay:0s"></div>
+          <div class="flow-dot" style="animation-delay:0.7s"></div>
+          <div class="flow-dot" style="animation-delay:1.4s"></div>
+          <div class="flow-dot" style="animation-delay:2.1s"></div>
+          <div class="flow-dot" style="animation-delay:2.8s"></div>
+          <div class="stations"></div>
+        </div>
       </div>
-      <div class="log-body" id="log-body"></div>
-    </div>
-  </section>
+      <div class="panel">
+        <div class="panel-head">
+          <h2>イベントログ</h2>
+          <span class="sub">リアルタイム</span>
+        </div>
+        <div class="log-body"></div>
+      </div>
+    </section>
+  </div>
 
   <div class="dock">
-    <div class="proposal" id="proposal">
+    <div class="proposal" id="proposal-line3">
       <div class="proposal-inner">
         <div class="proposal-stripe"></div>
         <div class="proposal-body">
           <p class="proposal-title">対処案 ― 刃具摩耗パターンを検出</p>
-          <p class="proposal-evidence">主軸電流 <span class="v" id="ev-current">+0%</span> ／ 振動 <span class="v" id="ev-vibe">+0%</span> ／ 寸法測定値が上限規格に接近</p>
-          <ol class="proposal-list" id="proposal-list">
+          <p class="proposal-evidence">主軸電流 <span class="v" data-ev="current">+0%</span> ／ 振動 <span class="v" data-ev="vibe">+0%</span> ／ 寸法測定値が上限規格に接近</p>
+          <ol class="proposal-list">
             <li><span class="step-badge">1</span><span>刃具交換を実施</span></li>
             <li><span class="step-badge">2</span><span>交換後の補正値を自動計算して適用（X軸 +0.02mm／Y軸 −0.01mm）</span></li>
             <li><span class="step-badge">3</span><span>対象ロット #L-2291〜#L-2298 を別条件で再加工キューへ登録</span></li>
           </ol>
           <div class="proposal-actions">
-            <button class="btn btn-primary" id="approve-btn" type="button">承認して実行</button>
-            <button class="btn btn-ghost" id="hold-btn" type="button">保留する</button>
+            <button class="btn btn-primary" type="button" data-action="approve">承認して実行</button>
+            <button class="btn btn-ghost" type="button" data-action="hold">保留する</button>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="proposal" id="proposal-line1" hidden>
+      <div class="proposal-inner">
+        <div class="proposal-stripe"></div>
+        <div class="proposal-body">
+          <p class="proposal-title">対処案 ― 資材引当不足による欠品リスクを検出</p>
+          <p class="proposal-evidence">引当不足 <span class="v" data-ev="shortage">0kg</span>（対象ロット <span class="v" data-ev="lot">―</span>）／ 欠品予測 <span class="v" data-ev="eta">――</span></p>
+          <ol class="proposal-list">
+            <li><span class="step-badge">1</span><span>生産順序を変更し、引当済みの品番を先行投入（品番 BR-4521 は代替材料の到着後に再投入）</span></li>
+            <li><span class="step-badge">2</span><span>不足分を承認済み代替材料（材料コード SUB-221）へ切替、または第2工場からの数量融通を確定</span></li>
+            <li><span class="step-badge">3</span><span>残る不足数量を外注加工へ振替し、TECHSの生産計画・引当情報を更新して再スケジュール</span></li>
+          </ol>
+          <div class="proposal-actions">
+            <button class="btn btn-primary" type="button" data-action="approve">承認して実行</button>
+            <button class="btn btn-ghost" type="button" data-action="hold">保留する</button>
           </div>
         </div>
       </div>
@@ -483,7 +574,7 @@
         <div class="mascot-ring"></div>
       </div>
       <div class="dock-text">
-        <div class="dock-name"><span class="live-dot"></span>AIエージェント ― 監視アシスタント</div>
+        <div class="dock-name"><span class="live-dot"></span><span id="dock-name-text">AIエージェント ― 監視アシスタント</span></div>
         <div class="dock-msg" id="dock-msg">起動しています…</div>
       </div>
     </div>
@@ -493,124 +584,40 @@
 <script>
 (function () {
   "use strict";
-  var reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
-  /* ---------------- Categories / monitor strip ---------------- */
+  /* ---------------- Icon libraries (shared across lines) ---------------- */
   var ICONS = {
     equipment: '<path d="M12 3v3M12 18v3M3 12h3M18 12h3M6 6l2 2M16 16l2 2M6 18l2-2M16 8l2-2" stroke="currentColor" stroke-width="1.6" fill="none" stroke-linecap="round"/><circle cx="12" cy="12" r="4.2" stroke="currentColor" stroke-width="1.6" fill="none"/>',
     quality: '<rect x="4" y="4" width="16" height="16" rx="2.5" stroke="currentColor" stroke-width="1.6" fill="none"/><path d="M8 12.5l2.5 2.5L16 9.5" stroke="currentColor" stroke-width="1.7" fill="none" stroke-linecap="round" stroke-linejoin="round"/>',
     process: '<rect x="4" y="13" width="3.6" height="7" rx="0.8" fill="currentColor"/><rect x="10.2" y="8" width="3.6" height="12" rx="0.8" fill="currentColor"/><rect x="16.4" y="4" width="3.6" height="16" rx="0.8" fill="currentColor"/>',
     tools: '<path d="M14.5 4.5a3.6 3.6 0 0 0-4.8 4.2L4 14.4v3.1h3.1l5.7-5.7a3.6 3.6 0 0 0 4.2-4.8l-2.3 2.3-1.7-1.7 2.3-2.3z" stroke="currentColor" stroke-width="1.5" fill="none" stroke-linejoin="round"/>',
     transport: '<path d="M4 17V9a2 2 0 0 1 2-2h6l4 4h2a2 2 0 0 1 2 2v4" stroke="currentColor" stroke-width="1.6" fill="none" stroke-linecap="round" stroke-linejoin="round"/><circle cx="8" cy="18" r="1.8" fill="currentColor"/><circle cx="17" cy="18" r="1.8" fill="currentColor"/>',
-    safety: '<path d="M12 3.5l7 2.6v5.3c0 4.6-3 8.3-7 9.1-4-0.8-7-4.5-7-9.1V6.1z" stroke="currentColor" stroke-width="1.6" fill="none" stroke-linejoin="round"/><path d="M9 12l2.2 2.2L15.5 9.5" stroke="currentColor" stroke-width="1.7" fill="none" stroke-linecap="round" stroke-linejoin="round"/>'
+    safety: '<path d="M12 3.5l7 2.6v5.3c0 4.6-3 8.3-7 9.1-4-0.8-7-4.5-7-9.1V6.1z" stroke="currentColor" stroke-width="1.6" fill="none" stroke-linejoin="round"/><path d="M9 12l2.2 2.2L15.5 9.5" stroke="currentColor" stroke-width="1.7" fill="none" stroke-linecap="round" stroke-linejoin="round"/>',
+    inventory: '<rect x="4" y="11" width="7" height="7" rx="1" stroke="currentColor" stroke-width="1.6" fill="none"/><rect x="13" y="11" width="7" height="7" rx="1" stroke="currentColor" stroke-width="1.6" fill="none"/><rect x="8.5" y="4" width="7" height="7" rx="1" stroke="currentColor" stroke-width="1.6" fill="none"/>',
+    allocation: '<rect x="5" y="4" width="14" height="17" rx="2" stroke="currentColor" stroke-width="1.6" fill="none"/><path d="M9 4V3.4A1.4 1.4 0 0 1 10.4 2h3.2A1.4 1.4 0 0 1 15 3.4V4" stroke="currentColor" stroke-width="1.6" fill="none"/><path d="M8.5 13l2.2 2.2L15.5 10.5" stroke="currentColor" stroke-width="1.7" fill="none" stroke-linecap="round" stroke-linejoin="round"/>',
+    procurement: '<rect x="2.5" y="9" width="10.5" height="7" rx="1" stroke="currentColor" stroke-width="1.6" fill="none"/><path d="M13 11h3.3l3.2 3.1V16H13z" stroke="currentColor" stroke-width="1.6" fill="none" stroke-linejoin="round"/><circle cx="7" cy="18" r="1.7" stroke="currentColor" stroke-width="1.4" fill="none"/><circle cx="17" cy="18" r="1.7" stroke="currentColor" stroke-width="1.4" fill="none"/>',
+    usage: '<path d="M11 3.5h6.5A1 1 0 0 1 18.5 4.5V11l-9.5 9.5-7-7z" stroke="currentColor" stroke-width="1.6" fill="none" stroke-linejoin="round"/><circle cx="15" cy="8" r="1.3" fill="currentColor"/>',
+    coordination: '<path d="M4 8.5h11.5M12 4.5l4 4-4 4" stroke="currentColor" stroke-width="1.6" fill="none" stroke-linecap="round" stroke-linejoin="round"/><path d="M20 15.5H8.5M12 19.5l-4-4 4-4" stroke="currentColor" stroke-width="1.6" fill="none" stroke-linecap="round" stroke-linejoin="round"/>'
   };
-
-  var categories = [
-    { id: "equipment", title: "設備状態", metrics: [
-      { id: "current", label: "主軸電流", unit: "A", base: 68, dp: 0 },
-      { id: "vibe", label: "振動", unit: "mm/s", base: 1.2, dp: 1 },
-      { id: "temp", label: "温度", unit: "℃", base: 41, dp: 0 }
-    ] },
-    { id: "quality", title: "品質情報", metrics: [
-      { id: "dim", label: "寸法測定値", unit: "mm", base: 20.020, dp: 3 },
-      { id: "okrate", label: "外観検査OK率", unit: "%", base: 99.6, dp: 1 }
-    ] },
-    { id: "process", title: "工程進捗", metrics: [
-      { id: "wip", label: "WIP", unit: "個", base: 24, dp: 0 },
-      { id: "dwell", label: "平均滞留", unit: "min", base: 6.4, dp: 1 }
-    ] },
-    { id: "tools", title: "材料/治具/工具", metrics: [
-      { id: "toollife", label: "工具寿命残り", unit: "%", base: 46, dp: 0 },
-      { id: "jig", label: "治具状態", unit: "", text: "使用可" }
-    ] },
-    { id: "transport", title: "搬送/ロボット", metrics: [
-      { id: "robot", label: "稼働状態", unit: "", text: "正常" },
-      { id: "comm", label: "通信", unit: "", text: "正常" }
-    ] },
-    { id: "safety", title: "安全/環境", metrics: [
-      { id: "door", label: "扉状態", unit: "", text: "閉" },
-      { id: "air", label: "エア圧", unit: "MPa", base: 0.52, dp: 2 }
-    ] }
-  ];
-
-  var strip = document.getElementById("monitor-strip");
-  categories.forEach(function (cat) {
-    var card = document.createElement("div");
-    card.className = "mcard";
-    card.id = "mcard-" + cat.id;
-    var rows = cat.metrics.map(function (m) {
-      return '<div class="mrow"><span>' + m.label + '</span><span class="v" id="m-' + m.id + '">' +
-        (m.text ? m.text : m.base.toFixed(m.dp) + (m.unit ? " " + m.unit : "")) + '</span></div>';
-    }).join("");
-    card.innerHTML =
-      '<div class="mcard-head"><svg class="mcard-icon" viewBox="0 0 24 24">' + ICONS[cat.id] + '</svg>' +
-      '<span class="mcard-title">' + cat.title + '</span><span class="mcard-status"></span></div>' + rows;
-    strip.appendChild(card);
-  });
-
-  function setMetric(id, text, flag) {
-    var el = document.getElementById("m-" + id);
-    if (!el) return;
-    el.textContent = text;
-    el.classList.toggle("flag", !!flag);
-  }
-  function setCardState(id, critical) {
-    var el = document.getElementById("mcard-" + id);
-    if (el) el.classList.toggle("critical", critical);
-  }
-
-  /* ---------------- Line schematic ---------------- */
   var STATION_ICON = {
-    in: '<path d="M4 12h13M13 7l5 5-5 5" stroke="currentColor" stroke-width="1.7" fill="none" stroke-linecap="round" stroke-linejoin="round"/>',
+    "in": '<path d="M4 12h13M13 7l5 5-5 5" stroke="currentColor" stroke-width="1.7" fill="none" stroke-linecap="round" stroke-linejoin="round"/>',
     rough: '<circle cx="12" cy="12" r="7" stroke="currentColor" stroke-width="1.6" fill="none"/><path d="M12 8v4l3 2" stroke="currentColor" stroke-width="1.6" fill="none" stroke-linecap="round"/>',
     cnc: '<circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="1.6" fill="none"/><path d="M12 3v3M12 18v3M3 12h3M18 12h3M6 6l2 2M16 16l2 2M6 18l2-2M16 8l2-2" stroke="currentColor" stroke-width="1.6" fill="none" stroke-linecap="round"/>',
     inspect: '<rect x="4" y="4" width="16" height="16" rx="2.5" stroke="currentColor" stroke-width="1.6" fill="none"/><path d="M8 12.5l2.5 2.5L16 9.5" stroke="currentColor" stroke-width="1.7" fill="none" stroke-linecap="round" stroke-linejoin="round"/>',
-    done: '<path d="M4.5 12.5l4.5 4.5L19.5 6" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>'
+    done: '<path d="M4.5 12.5l4.5 4.5L19.5 6" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>',
+    stage: '<rect x="4" y="11" width="7" height="7" rx="1" stroke="currentColor" stroke-width="1.6" fill="none"/><rect x="13" y="11" width="7" height="7" rx="1" stroke="currentColor" stroke-width="1.6" fill="none"/><rect x="8.5" y="4" width="7" height="7" rx="1" stroke="currentColor" stroke-width="1.6" fill="none"/>',
+    press: '<path d="M12 3v7M8.5 7.5l3.5 3.5 3.5-3.5" stroke="currentColor" stroke-width="1.7" fill="none" stroke-linecap="round" stroke-linejoin="round"/><rect x="5" y="15" width="14" height="5" rx="1" stroke="currentColor" stroke-width="1.6" fill="none"/>',
+    assemble: '<path d="M14.5 4.5a3.6 3.6 0 0 0-4.8 4.2L4 14.4v3.1h3.1l5.7-5.7a3.6 3.6 0 0 0 4.2-4.8l-2.3 2.3-1.7-1.7 2.3-2.3z" stroke="currentColor" stroke-width="1.5" fill="none" stroke-linejoin="round"/>'
   };
-  var stations = [
-    { id: "in", label: "投入" },
-    { id: "rough", label: "粗加工" },
-    { id: "cnc", label: "CNC旋盤仕上げ", sub: true },
-    { id: "inspect", label: "検査" },
-    { id: "done", label: "完成" }
-  ];
-  var stationsEl = document.getElementById("stations");
-  stations.forEach(function (s) {
-    var el = document.createElement("div");
-    el.className = "station";
-    el.id = "station-" + s.id;
-    el.innerHTML = '<div class="node"><svg viewBox="0 0 24 24">' + STATION_ICON[s.id] + '</svg></div>' +
-      '<div class="station-label">' + s.label + '</div>' +
-      '<div class="station-sub" id="station-sub-' + s.id + '"></div>';
-    stationsEl.appendChild(el);
-  });
 
-  /* ---------------- Event log ---------------- */
-  var logBody = document.getElementById("log-body");
-  function logEvent(sev, tag, msg) {
-    var row = document.createElement("div");
-    row.className = "log-row";
-    var t = new Date().toLocaleTimeString("ja-JP", { hour12: false });
-    row.innerHTML = '<span class="log-time">' + t + '</span><span class="log-sev ' + sev + '"></span>' +
-      '<span class="log-msg">' + (tag ? '<span class="tag">[' + tag + ']</span> ' : '') + msg + '</span>';
-    logBody.insertBefore(row, logBody.firstChild);
-  }
+  var LOG_STEP = 2000; // interval between successive event-log lines, for readability
 
-  /* ---------------- Overall status pill ---------------- */
-  var overallPill = document.getElementById("overall-pill");
-  var overallText = document.getElementById("overall-text");
-  function setOverall(critical, text) {
-    overallPill.classList.toggle("critical", critical);
-    overallText.textContent = text;
-  }
-
-  /* ---------------- Clock ---------------- */
+  /* ---------------- Shared chrome: clock, mascot, dock, tabs ---------------- */
   var clockEl = document.getElementById("clock");
   function tickClock() { clockEl.textContent = new Date().toLocaleTimeString("ja-JP", { hour12: false }); }
   tickClock();
   setInterval(tickClock, 1000);
 
-  /* ---------------- Mascot (pixel canvas) ---------------- */
   var MASCOT_MAP = [
     "................",
     "................",
@@ -658,188 +665,518 @@
     });
   }
   drawMascot(MASCOT_MAP);
-  var blinkTimer = setInterval(function () {
+  setInterval(function () {
     if (document.hidden) return;
     drawMascot(MASCOT_MAP_BLINK);
     setTimeout(function () { drawMascot(MASCOT_MAP); }, 120);
   }, 4200);
 
   var mascotWrap = document.getElementById("mascot-wrap");
-  function setMascotState(state) {
-    mascotWrap.classList.toggle("alert", state === "alert");
-    mascotWrap.classList.toggle("busy", state === "busy");
-  }
-
-  /* ---------------- Dock message ---------------- */
   var dockMsg = document.getElementById("dock-msg");
-  function say(text) { dockMsg.textContent = text; }
+  var dockNameText = document.getElementById("dock-name-text");
+  var overallPill = document.getElementById("overall-pill");
+  var overallText = document.getElementById("overall-text");
+  var breadcrumbEl = document.getElementById("breadcrumb");
 
-  /* ---------------- Proposal panel ---------------- */
-  var proposal = document.getElementById("proposal");
-  var approveBtn = document.getElementById("approve-btn");
-  var holdBtn = document.getElementById("hold-btn");
-  var proposalItems = document.querySelectorAll("#proposal-list li");
-  var evCurrent = document.getElementById("ev-current");
-  var evVibe = document.getElementById("ev-vibe");
+  var activeLineKey = null;
+  var lineControllers = {};
 
-  /* ---------------- Scenario ---------------- */
-  var timers = [];
-  function after(ms, fn) { var id = setTimeout(fn, ms); timers.push(id); return id; }
-  function clearScenario() { timers.forEach(clearTimeout); timers = []; }
+  /* ---------------- Per-line controller factory ---------------- */
+  function createLine(cfg) {
+    var root = document.querySelector('.line-screen[data-line-screen="' + cfg.key + '"]');
+    var stripEl = root.querySelector(".monitor-strip");
+    var stationsEl = root.querySelector(".stations");
+    var logBodyEl = root.querySelector(".log-body");
+    var proposalEl = document.getElementById("proposal-" + cfg.key);
+    var approveBtn = proposalEl.querySelector('[data-action="approve"]');
+    var holdBtn = proposalEl.querySelector('[data-action="hold"]');
+    var proposalItems = proposalEl.querySelectorAll(".proposal-list li");
 
-  function lerp(a, b, t) { return a + (b - a) * t; }
+    cfg.categories.forEach(function (cat) {
+      var card = document.createElement("div");
+      card.className = "mcard";
+      card.dataset.card = cat.id;
+      var rows = cat.metrics.map(function (m) {
+        var initial = m.text ? m.text : m.base.toFixed(m.dp) + (m.unit ? " " + m.unit : "");
+        return '<div class="mrow"><span>' + m.label + '</span><span class="v" data-metric="' + m.id + '">' + initial + "</span></div>";
+      }).join("");
+      card.innerHTML =
+        '<div class="mcard-head"><svg class="mcard-icon" viewBox="0 0 24 24">' + ICONS[cat.id] + "</svg>" +
+        '<span class="mcard-title">' + cat.title + '</span><span class="mcard-status"></span></div>' + rows;
+      stripEl.appendChild(card);
+    });
 
-  function animateMetric(id, from, to, dp, unit, duration, onFrame) {
-    var start = performance.now();
-    function frame(now) {
-      var t = Math.min(1, (now - start) / duration);
-      var val = lerp(from, to, t);
-      setMetric(id, val.toFixed(dp) + (unit ? " " + unit : ""), t > 0.15);
-      if (onFrame) onFrame(t, val);
-      if (t < 1) requestAnimationFrame(frame);
+    cfg.stations.forEach(function (s) {
+      var el = document.createElement("div");
+      el.className = "station";
+      el.dataset.station = s.id;
+      el.innerHTML =
+        '<div class="node"><svg viewBox="0 0 24 24">' + STATION_ICON[s.id] + "</svg></div>" +
+        '<div class="station-label">' + s.label + '</div>' +
+        '<div class="station-sub" data-station-sub="' + s.id + '"></div>';
+      stationsEl.appendChild(el);
+    });
+
+    function setMetric(id, text, flag) {
+      var el = stripEl.querySelector('[data-metric="' + id + '"]');
+      if (!el) return;
+      el.textContent = text;
+      el.classList.toggle("flag", !!flag);
     }
-    requestAnimationFrame(frame);
-  }
+    function setCardState(id, critical) {
+      var el = stripEl.querySelector('[data-card="' + id + '"]');
+      if (el) el.classList.toggle("critical", critical);
+    }
+    function setStationCritical(id, critical) {
+      var el = stationsEl.querySelector('[data-station="' + id + '"]');
+      if (el) el.classList.toggle("critical", critical);
+    }
+    function setStationSub(id, text) {
+      var el = stationsEl.querySelector('[data-station-sub="' + id + '"]');
+      if (el) el.textContent = text;
+    }
+    function setEv(key, text) {
+      var el = proposalEl.querySelector('[data-ev="' + key + '"]');
+      if (el) el.textContent = text;
+    }
+    function logEvent(sev, tag, msg) {
+      var row = document.createElement("div");
+      row.className = "log-row";
+      var t = new Date().toLocaleTimeString("ja-JP", { hour12: false });
+      row.innerHTML =
+        '<span class="log-time">' + t + '</span><span class="log-sev ' + sev + '"></span>' +
+        '<span class="log-msg">' + (tag ? '<span class="tag">[' + tag + "]</span> " : "") + msg + "</span>";
+      logBodyEl.insertBefore(row, logBodyEl.firstChild);
+    }
+    function animateMetric(id, from, to, dp, unit, duration) {
+      var start = performance.now();
+      function frame(now) {
+        var t = Math.min(1, (now - start) / duration);
+        var val = from + (to - from) * t;
+        setMetric(id, val.toFixed(dp) + (unit ? " " + unit : ""), t > 0.15);
+        if (t < 1) requestAnimationFrame(frame);
+      }
+      requestAnimationFrame(frame);
+    }
 
-  function resetDashboard() {
-    clearScenario();
-    proposal.classList.remove("open");
-    approveBtn.disabled = false;
-    approveBtn.textContent = "承認して実行";
-    proposalItems.forEach(function (li) { li.classList.remove("done"); });
-    setMascotState("idle");
-    setOverall(false, "全項目 正常稼働中");
-    categories.forEach(function (cat) {
-      setCardState(cat.id, false);
-      cat.metrics.forEach(function (m) {
-        setMetric(m.id, m.text ? m.text : m.base.toFixed(m.dp) + (m.unit ? " " + m.unit : ""), false);
+    var timers = [];
+    function after(ms, fn) { var id = setTimeout(fn, ms); timers.push(id); return id; }
+    function clearScenario() { timers.forEach(clearTimeout); timers = []; }
+
+    var line = {
+      key: cfg.key,
+      facility: cfg.facility,
+      lineLabel: cfg.lineLabel,
+      started: false,
+      dockMessage: "",
+      mascotState: "idle",
+      overallCritical: false,
+      overallText: "全項目 正常稼働中",
+      proposalEl: proposalEl,
+      approveBtn: approveBtn,
+      holdBtn: holdBtn,
+      proposalItems: proposalItems,
+      setMetric: setMetric,
+      setCardState: setCardState,
+      setStationCritical: setStationCritical,
+      setStationSub: setStationSub,
+      setEv: setEv,
+      logEvent: logEvent,
+      animateMetric: animateMetric,
+      after: after
+    };
+
+    line.say = function (text) {
+      line.dockMessage = text;
+      if (activeLineKey === cfg.key) dockMsg.textContent = text;
+    };
+    line.setMascot = function (state) {
+      line.mascotState = state;
+      if (activeLineKey === cfg.key) {
+        mascotWrap.classList.toggle("alert", state === "alert");
+        mascotWrap.classList.toggle("busy", state === "busy");
+      }
+    };
+    line.setOverall = function (critical, text) {
+      line.overallCritical = critical;
+      line.overallText = text;
+      var dot = document.querySelector('.tab-dot[data-line="' + cfg.key + '"]');
+      if (dot) dot.classList.toggle("critical", critical);
+      if (activeLineKey === cfg.key) {
+        overallPill.classList.toggle("critical", critical);
+        overallText.textContent = text;
+      }
+    };
+    line.resetDashboard = function () {
+      clearScenario();
+      proposalEl.classList.remove("open");
+      approveBtn.disabled = false;
+      holdBtn.disabled = false;
+      approveBtn.textContent = "承認して実行";
+      proposalItems.forEach(function (li) { li.classList.remove("done"); });
+      line.setMascot("idle");
+      line.setOverall(false, "全項目 正常稼働中");
+      cfg.categories.forEach(function (cat) {
+        setCardState(cat.id, false);
+        cat.metrics.forEach(function (m) {
+          setMetric(m.id, m.text ? m.text : m.base.toFixed(m.dp) + (m.unit ? " " + m.unit : ""), false);
+        });
       });
+      cfg.stations.forEach(function (s) { setStationCritical(s.id, false); setStationSub(s.id, ""); });
+      logBodyEl.innerHTML = "";
+      logEvent("ok", "system", cfg.startupLogMsg);
+      line.say(cfg.idleMessage);
+    };
+
+    approveBtn.addEventListener("click", function () {
+      timers.forEach(clearTimeout);
+      line.executeRemediation();
     });
-    document.getElementById("station-cnc").classList.remove("critical");
-    document.getElementById("station-sub-cnc").textContent = "";
-    logBody.innerHTML = "";
-    logEvent("ok", "system", "TP LineGuard AI を起動しました。加工ライン3の監視を開始します。");
-    say("各製造ラインは安定稼働しております。引き続き監視中です。");
+    holdBtn.addEventListener("click", function () {
+      logEvent("warn", "保留", cfg.holdLogMsg);
+      line.say(cfg.holdSayMsg);
+    });
+
+    return line;
   }
 
-  var LOG_STEP = 2000; // interval between successive event-log lines, for readability
+  function activateLine(key) {
+    activeLineKey = key;
+    document.querySelectorAll(".line-screen").forEach(function (el) {
+      el.hidden = el.dataset.lineScreen !== key;
+    });
+    Object.keys(lineControllers).forEach(function (k) {
+      lineControllers[k].proposalEl.hidden = k !== key;
+    });
+    document.querySelectorAll(".line-tab").forEach(function (btn) {
+      btn.classList.toggle("active", btn.dataset.line === key);
+    });
+    var c = lineControllers[key];
+    dockMsg.textContent = c.dockMessage;
+    mascotWrap.classList.toggle("alert", c.mascotState === "alert");
+    mascotWrap.classList.toggle("busy", c.mascotState === "busy");
+    overallPill.classList.toggle("critical", c.overallCritical);
+    overallText.textContent = c.overallText;
+    breadcrumbEl.innerHTML = "<b>サンプル精密工業株式会社</b> / " + c.facility + " / " + c.lineLabel;
+    dockNameText.textContent = "AIエージェント ― " + c.facility + c.lineLabel + "を監視中";
+    if (!c.started) {
+      c.started = true;
+      c.resetDashboard();
+      c.runScenario();
+    }
+  }
 
-  function runScenario() {
-    after(400, function () {
-      logEvent("ok", "監視", "6カテゴリ・全監視項目 正常範囲内。");
+  /* =================================================================
+     LINE 3 ― 第2工場 加工ライン3 ― 刃具摩耗パターン
+     ================================================================= */
+  var line3 = createLine({
+    key: "line3",
+    facility: "第2工場",
+    lineLabel: "加工ライン3",
+    startupLogMsg: "TP LineGuard AI を起動しました。加工ライン3の監視を開始します。",
+    idleMessage: "各製造ラインは安定稼働しております。引き続き監視中です。",
+    holdLogMsg: "対応を保留しました。監視項目は異常のまま継続監視します。",
+    holdSayMsg: "対応を保留しました。異常が継続する場合は再度ご確認ください。",
+    categories: [
+      { id: "equipment", title: "設備状態", metrics: [
+        { id: "current", label: "主軸電流", unit: "A", base: 68, dp: 0 },
+        { id: "vibe", label: "振動", unit: "mm/s", base: 1.2, dp: 1 },
+        { id: "temp", label: "温度", unit: "℃", base: 41, dp: 0 }
+      ] },
+      { id: "quality", title: "品質情報", metrics: [
+        { id: "dim", label: "寸法測定値", unit: "mm", base: 20.020, dp: 3 },
+        { id: "okrate", label: "外観検査OK率", unit: "%", base: 99.6, dp: 1 }
+      ] },
+      { id: "process", title: "工程進捗", metrics: [
+        { id: "wip", label: "WIP", unit: "個", base: 24, dp: 0 },
+        { id: "dwell", label: "平均滞留", unit: "min", base: 6.4, dp: 1 }
+      ] },
+      { id: "tools", title: "材料/治具/工具", metrics: [
+        { id: "toollife", label: "工具寿命残り", unit: "%", base: 46, dp: 0 },
+        { id: "jig", label: "治具状態", text: "使用可" }
+      ] },
+      { id: "transport", title: "搬送/ロボット", metrics: [
+        { id: "robot", label: "稼働状態", text: "正常" },
+        { id: "comm", label: "通信", text: "正常" }
+      ] },
+      { id: "safety", title: "安全/環境", metrics: [
+        { id: "door", label: "扉状態", text: "閉" },
+        { id: "air", label: "エア圧", unit: "MPa", base: 0.52, dp: 2 }
+      ] }
+    ],
+    stations: [
+      { id: "in", label: "投入" },
+      { id: "rough", label: "粗加工" },
+      { id: "cnc", label: "CNC旋盤仕上げ" },
+      { id: "inspect", label: "検査" },
+      { id: "done", label: "完成" }
+    ]
+  });
+  lineControllers.line3 = line3;
+
+  line3.runScenario = function () {
+    var c = line3;
+    c.after(400, function () {
+      c.logEvent("ok", "監視", "6カテゴリ・全監視項目 正常範囲内。");
     });
 
-    // --- ramp up anomaly: each log line lands LOG_STEP apart ---
-    after(10000, function () {
-      logEvent("warn", "検知", "CNC旋盤仕上げ工程で主軸電流の緩やかな上昇を検知。経過を追跡します。");
-      say("CNC旋盤仕上げ工程の主軸電流にわずかな上昇傾向があります。経過を確認しています…");
-      document.getElementById("station-cnc").classList.add("critical");
-      document.getElementById("station-sub-cnc").textContent = "電流上昇中";
+    c.after(10000, function () {
+      c.logEvent("warn", "検知", "CNC旋盤仕上げ工程で主軸電流の緩やかな上昇を検知。経過を追跡します。");
+      c.say("CNC旋盤仕上げ工程の主軸電流にわずかな上昇傾向があります。経過を確認しています…");
+      c.setStationCritical("cnc", true);
+      c.setStationSub("cnc", "電流上昇中");
 
       var rampDuration = LOG_STEP * 2;
-      animateMetric("current", 68, 84, 0, "A", rampDuration);
-      animateMetric("vibe", 1.2, 2.4, 1, "mm/s", rampDuration);
-      animateMetric("dim", 20.020, 20.048, 3, "mm", rampDuration);
-      animateMetric("toollife", 46, 12, 0, "%", rampDuration);
-      animateMetric("okrate", 99.6, 97.1, 1, "%", rampDuration);
+      c.animateMetric("current", 68, 84, 0, "A", rampDuration);
+      c.animateMetric("vibe", 1.2, 2.4, 1, "mm/s", rampDuration);
+      c.animateMetric("dim", 20.020, 20.048, 3, "mm", rampDuration);
+      c.animateMetric("toollife", 46, 12, 0, "%", rampDuration);
+      c.animateMetric("okrate", 99.6, 97.1, 1, "%", rampDuration);
     });
 
-    after(10000 + LOG_STEP, function () {
-      setCardState("equipment", true);
-      setCardState("quality", true);
-      setCardState("tools", true);
-      setOverall(true, "1件の異常を検知");
-      document.getElementById("station-sub-cnc").textContent = "要対応";
-      setMascotState("alert");
-      logEvent("critical", "異常", "主軸電流 +24%／振動 +100%／寸法測定値が上限規格(20.050mm)に接近。刃具摩耗パターンの疑い。");
-      say("異常を検知しました。刃具摩耗パターンの兆候と一致しています。対処案をまとめています…");
+    c.after(10000 + LOG_STEP, function () {
+      c.setCardState("equipment", true);
+      c.setCardState("quality", true);
+      c.setCardState("tools", true);
+      c.setOverall(true, "1件の異常を検知");
+      c.setStationSub("cnc", "要対応");
+      c.setMascot("alert");
+      c.logEvent("critical", "異常", "主軸電流 +24%／振動 +100%／寸法測定値が上限規格(20.050mm)に接近。刃具摩耗パターンの疑い。");
+      c.say("異常を検知しました。刃具摩耗パターンの兆候と一致しています。対処案をまとめています…");
     });
 
-    after(10000 + LOG_STEP * 2, function () {
-      evCurrent.textContent = "+24%";
-      evVibe.textContent = "+100%";
-      proposal.classList.add("open");
-      logEvent("critical", "AI提案", "対処案を提示しました。承認待ちです。");
-      say("対処案を提示しました。内容をご確認のうえ、実行の可否をご判断ください。");
+    c.after(10000 + LOG_STEP * 2, function () {
+      c.setEv("current", "+24%");
+      c.setEv("vibe", "+100%");
+      c.proposalEl.classList.add("open");
+      c.logEvent("critical", "AI提案", "対処案を提示しました。承認待ちです。");
+      c.say("対処案を提示しました。内容をご確認のうえ、実行の可否をご判断ください。");
     });
-  }
+  };
 
-  function executeRemediation() {
-    approveBtn.disabled = true;
-    holdBtn.disabled = true;
-    approveBtn.textContent = "実行中…";
-    setMascotState("busy");
-    logEvent("ok", "承認", "対処案が承認されました。TECHSと連携し自動実行します。");
-    say("対処案を実行しています…");
+  line3.executeRemediation = function () {
+    var c = line3;
+    c.approveBtn.disabled = true;
+    c.holdBtn.disabled = true;
+    c.approveBtn.textContent = "実行中…";
+    c.setMascot("busy");
+    c.logEvent("ok", "承認", "対処案が承認されました。TECHSと連携し自動実行します。");
+    c.say("対処案を実行しています…");
 
-    // each remediation step lands exactly LOG_STEP apart, so the log reads at a followable pace
-    after(LOG_STEP * 1, function () {
-      proposalItems[0].classList.add("done");
-      logEvent("ok", "TECHS連携", "工具交換指示を送信し、工具寿命カウンタをリセットしました。");
+    c.after(LOG_STEP * 1, function () {
+      c.proposalItems[0].classList.add("done");
+      c.logEvent("ok", "TECHS連携", "工具交換指示を送信し、工具寿命カウンタをリセットしました。");
     });
-
-    after(LOG_STEP * 2, function () {
-      proposalItems[1].classList.add("done");
-      logEvent("ok", "TECHS連携", "補正値（X軸 +0.02mm／Y軸 −0.01mm）を加工条件に適用しました。");
+    c.after(LOG_STEP * 2, function () {
+      c.proposalItems[1].classList.add("done");
+      c.logEvent("ok", "TECHS連携", "補正値（X軸 +0.02mm／Y軸 −0.01mm）を加工条件に適用しました。");
     });
-
-    after(LOG_STEP * 3, function () {
-      proposalItems[2].classList.add("done");
-      logEvent("ok", "TECHS連携", "対象ロット #L-2291〜#L-2298 を再加工キューへ登録しました。");
+    c.after(LOG_STEP * 3, function () {
+      c.proposalItems[2].classList.add("done");
+      c.logEvent("ok", "TECHS連携", "対象ロット #L-2291〜#L-2298 を再加工キューへ登録しました。");
     });
-
-    after(LOG_STEP * 4, function () {
-      logEvent("ok", "実行", "刃具交換・補正が完了しました。数値の復旧を確認しています。");
-      say("刃具交換と補正が完了しました。数値の復旧を確認しています…");
-      animateMetric("current", 84, 68, 0, "A", LOG_STEP);
-      animateMetric("vibe", 2.4, 1.2, 1, "mm/s", LOG_STEP);
-      animateMetric("dim", 20.048, 20.020, 3, "mm", LOG_STEP);
-      animateMetric("toollife", 12, 96, 0, "%", LOG_STEP);
-      animateMetric("okrate", 97.1, 99.8, 1, "%", LOG_STEP);
+    c.after(LOG_STEP * 4, function () {
+      c.logEvent("ok", "実行", "刃具交換・補正が完了しました。数値の復旧を確認しています。");
+      c.say("刃具交換と補正が完了しました。数値の復旧を確認しています…");
+      c.animateMetric("current", 84, 68, 0, "A", LOG_STEP);
+      c.animateMetric("vibe", 2.4, 1.2, 1, "mm/s", LOG_STEP);
+      c.animateMetric("dim", 20.048, 20.020, 3, "mm", LOG_STEP);
+      c.animateMetric("toollife", 12, 96, 0, "%", LOG_STEP);
+      c.animateMetric("okrate", 97.1, 99.8, 1, "%", LOG_STEP);
     });
-
-    after(LOG_STEP * 5, function () {
-      setCardState("equipment", false);
-      setCardState("quality", false);
-      setCardState("tools", false);
-      setOverall(false, "全項目 正常稼働中");
-      setMascotState("idle");
-      document.getElementById("station-cnc").classList.remove("critical");
-      document.getElementById("station-sub-cnc").textContent = "";
-      logEvent("ok", "復旧", "全監視項目が正常値に復旧しました。監視を継続します。");
-      say("全ての監視項目が正常値に復旧しました。刃具寿命カウンタをリセットし、再加工ロットの指示を完了しています。引き続き監視を継続します。");
-      after(LOG_STEP * 1.5, function () {
-        proposal.classList.remove("open");
-        approveBtn.disabled = false;
-        holdBtn.disabled = false;
-        approveBtn.textContent = "承認して実行";
-        proposalItems.forEach(function (li) { li.classList.remove("done"); });
+    c.after(LOG_STEP * 5, function () {
+      c.setCardState("equipment", false);
+      c.setCardState("quality", false);
+      c.setCardState("tools", false);
+      c.setOverall(false, "全項目 正常稼働中");
+      c.setMascot("idle");
+      c.setStationCritical("cnc", false);
+      c.setStationSub("cnc", "");
+      c.logEvent("ok", "復旧", "全監視項目が正常値に復旧しました。監視を継続します。");
+      c.say("全ての監視項目が正常値に復旧しました。刃具寿命カウンタをリセットし、再加工ロットの指示を完了しています。引き続き監視を継続します。");
+      c.after(LOG_STEP * 1.5, function () {
+        c.proposalEl.classList.remove("open");
+        c.approveBtn.disabled = false;
+        c.holdBtn.disabled = false;
+        c.approveBtn.textContent = "承認して実行";
+        c.proposalItems.forEach(function (li) { li.classList.remove("done"); });
       });
     });
-  }
+  };
 
-  approveBtn.addEventListener("click", function () {
-    timers.forEach(clearTimeout); // stop any pending scenario timers, keep proposal open
-    executeRemediation();
+  /* =================================================================
+     LINE 1 ― 第3工場 加工ライン1 ― 材料不足(欠品予測)パターン
+     ================================================================= */
+  var line1 = createLine({
+    key: "line1",
+    facility: "第3工場",
+    lineLabel: "加工ライン1",
+    startupLogMsg: "TP LineGuard AI を起動しました。加工ライン1の監視を開始します。",
+    idleMessage: "第3工場 加工ライン1も安定稼働しております。引き続き監視中です。",
+    holdLogMsg: "対応を保留しました。引当不足は解消されないため、欠品リスクが継続します。",
+    holdSayMsg: "対応を保留しました。欠品予測が継続する場合は早めのご判断をお願いします。",
+    categories: [
+      { id: "inventory", title: "資材在庫", metrics: [
+        { id: "stock", label: "在庫数", unit: "kg", base: 1240, dp: 0 },
+        { id: "safetyRatio", label: "安全在庫比率", unit: "%", base: 118, dp: 0 },
+        { id: "available", label: "引当可能在庫", unit: "kg", base: 860, dp: 0 }
+      ] },
+      { id: "allocation", title: "引当状況", metrics: [
+        { id: "required", label: "本日所要数", unit: "kg", base: 780, dp: 0 },
+        { id: "allocated", label: "引当済数", unit: "kg", base: 780, dp: 0 },
+        { id: "shortage", label: "引当不足", unit: "kg", base: 0, dp: 0 }
+      ] },
+      { id: "procurement", title: "発注/入荷", metrics: [
+        { id: "openpo", label: "発注残数", unit: "kg", base: 600, dp: 0 },
+        { id: "eta", label: "次回入荷予定", text: "07/22 10:00" },
+        { id: "delaycount", label: "遅延PO件数", unit: "件", base: 1, dp: 0 }
+      ] },
+      { id: "usage", title: "使用実績/ロット", metrics: [
+        { id: "usedQty", label: "当日使用実績", unit: "kg", base: 512, dp: 0 },
+        { id: "lot", label: "対象ロットNo", text: "LOT-8842" },
+        { id: "lotremain", label: "ロット残数", unit: "kg", base: 268, dp: 0 }
+      ] },
+      { id: "process", title: "工程進捗", metrics: [
+        { id: "wip", label: "WIP", unit: "個", base: 132, dp: 0 },
+        { id: "rate", label: "生産進捗率", unit: "%", base: 87, dp: 0 },
+        { id: "bottleneck", label: "ボトルネック工程", text: "組立" }
+      ] },
+      { id: "coordination", title: "外注/他ライン連携", metrics: [
+        { id: "outsource", label: "外注枠残", unit: "kg", base: 300, dp: 0 },
+        { id: "crossline", label: "他ライン振替可否", text: "可" },
+        { id: "lotswitch", label: "号口切替対応", text: "対応可" }
+      ] }
+    ],
+    stations: [
+      { id: "stage", label: "資材投入" },
+      { id: "press", label: "プレス加工" },
+      { id: "assemble", label: "組立" },
+      { id: "inspect", label: "検査" },
+      { id: "done", label: "完成" }
+    ]
   });
-  holdBtn.addEventListener("click", function () {
-    logEvent("warn", "保留", "対応を保留しました。監視項目は異常のまま継続監視します。");
-    say("対応を保留しました。異常が継続する場合は再度ご確認ください。");
+  lineControllers.line1 = line1;
+
+  line1.runScenario = function () {
+    var c = line1;
+    c.after(400, function () {
+      c.logEvent("ok", "監視", "6カテゴリ・全監視項目 正常範囲内。");
+    });
+
+    c.after(10000, function () {
+      c.logEvent("warn", "検知", "品番 BR-4521(ロット LOT-8842)について、本日所要量に対する引当可能在庫の減少を検知。経過を追跡します。");
+      c.say("本日の生産計画に対して資材の引当残が減少しています。所要量を確認しています…");
+      c.setStationCritical("stage", true);
+      c.setStationSub("stage", "在庫逼迫");
+
+      var rampDuration = LOG_STEP * 2;
+      c.animateMetric("stock", 1240, 900, 0, "kg", rampDuration);
+      c.animateMetric("safetyRatio", 118, 64, 0, "%", rampDuration);
+      c.animateMetric("available", 860, 210, 0, "kg", rampDuration);
+      c.animateMetric("allocated", 780, 440, 0, "kg", rampDuration);
+      c.animateMetric("shortage", 0, 340, 0, "kg", rampDuration);
+      c.animateMetric("usedQty", 512, 690, 0, "kg", rampDuration);
+      c.animateMetric("lotremain", 268, 40, 0, "kg", rampDuration);
+      c.animateMetric("wip", 132, 96, 0, "個", rampDuration);
+      c.animateMetric("rate", 87, 61, 0, "%", rampDuration);
+    });
+
+    c.after(10000 + LOG_STEP, function () {
+      c.setCardState("inventory", true);
+      c.setCardState("allocation", true);
+      c.setCardState("usage", true);
+      c.setOverall(true, "1件の異常を検知");
+      c.setStationSub("stage", "要対応");
+      c.setMascot("alert");
+      c.setMetric("bottleneck", "資材投入", true);
+      c.logEvent("critical", "異常", "品番 BR-4521(ロット LOT-8842)が本日予定生産数 1,050個に対し 340kg 不足。欠品予測: 本日 15:30 に加工ライン1が停止見込み。");
+      c.say("所要量計算の結果、欠品によるライン停止が予測されます。対処案をまとめています…");
+    });
+
+    c.after(10000 + LOG_STEP * 2, function () {
+      c.setEv("shortage", "340kg");
+      c.setEv("lot", "LOT-8842");
+      c.setEv("eta", "本日15:30 停止見込み");
+      c.proposalEl.classList.add("open");
+      c.logEvent("critical", "AI提案", "対処案を提示しました。承認待ちです。");
+      c.say("対処案を提示しました。内容をご確認のうえ、実行の可否をご判断ください。");
+    });
+  };
+
+  line1.executeRemediation = function () {
+    var c = line1;
+    c.approveBtn.disabled = true;
+    c.holdBtn.disabled = true;
+    c.approveBtn.textContent = "実行中…";
+    c.setMascot("busy");
+    c.logEvent("ok", "承認", "対処案が承認されました。TECHSと連携し自動実行します。");
+    c.say("対処案を実行しています…");
+
+    c.after(LOG_STEP * 1, function () {
+      c.proposalItems[0].classList.add("done");
+      c.setMetric("lotswitch", "適用済");
+      c.logEvent("ok", "TECHS連携", "生産順序を変更し、引当済み品番の先行投入をTECHSの生産計画へ反映しました。");
+    });
+    c.after(LOG_STEP * 2, function () {
+      c.proposalItems[1].classList.add("done");
+      c.setMetric("crossline", "実行済(第2工場)");
+      c.logEvent("ok", "TECHS連携", "代替材料(SUB-221)への切替、および第2工場からの数量融通を確定しました。");
+    });
+    c.after(LOG_STEP * 3, function () {
+      c.proposalItems[2].classList.add("done");
+      c.setMetric("outsource", "140 kg");
+      c.logEvent("ok", "TECHS連携", "残数量を外注加工へ振替し、引当情報を更新しました。");
+    });
+    c.after(LOG_STEP * 4, function () {
+      c.logEvent("ok", "実行", "資材の再配分が完了しました。欠品予測を確認しています。");
+      c.say("資材の再配分が完了しました。欠品予測を確認しています…");
+      c.animateMetric("stock", 900, 1240, 0, "kg", LOG_STEP);
+      c.animateMetric("safetyRatio", 64, 118, 0, "%", LOG_STEP);
+      c.animateMetric("available", 210, 860, 0, "kg", LOG_STEP);
+      c.animateMetric("allocated", 440, 780, 0, "kg", LOG_STEP);
+      c.animateMetric("shortage", 340, 0, 0, "kg", LOG_STEP);
+      c.animateMetric("usedQty", 690, 512, 0, "kg", LOG_STEP);
+      c.animateMetric("lotremain", 40, 268, 0, "kg", LOG_STEP);
+      c.animateMetric("wip", 96, 132, 0, "個", LOG_STEP);
+      c.animateMetric("rate", 61, 91, 0, "%", LOG_STEP);
+    });
+    c.after(LOG_STEP * 5, function () {
+      c.setCardState("inventory", false);
+      c.setCardState("allocation", false);
+      c.setCardState("usage", false);
+      c.setOverall(false, "全項目 正常稼働中");
+      c.setMascot("idle");
+      c.setStationCritical("stage", false);
+      c.setStationSub("stage", "");
+      c.logEvent("ok", "復旧", "欠品予測が解消し、加工ライン1は計画通り稼働を継続します。監視を継続します。");
+      c.say("欠品予測が解消しました。生産順序と引当情報の更新が完了し、加工ライン1は計画通り稼働を継続します。引き続き監視を継続します。");
+      c.after(LOG_STEP * 1.5, function () {
+        c.proposalEl.classList.remove("open");
+        c.approveBtn.disabled = false;
+        c.holdBtn.disabled = false;
+        c.approveBtn.textContent = "承認して実行";
+        c.proposalItems.forEach(function (li) { li.classList.remove("done"); });
+      });
+    });
+  };
+
+  /* ---------------- Tabs & top-level controls ---------------- */
+  document.querySelectorAll(".line-tab").forEach(function (btn) {
+    btn.addEventListener("click", function () { activateLine(btn.dataset.line); });
   });
 
   document.getElementById("reset-btn").addEventListener("click", function () {
-    resetDashboard();
-    runScenario();
+    var c = lineControllers[activeLineKey];
+    c.resetDashboard();
+    c.runScenario();
   });
 
   /* ---------------- Login → dashboard ---------------- */
   document.getElementById("login-form").addEventListener("submit", function (e) {
     e.preventDefault();
     document.getElementById("login").remove();
-    var app = document.getElementById("app");
-    app.hidden = false;
-    resetDashboard();
-    runScenario();
+    document.getElementById("app").hidden = false;
+    activateLine("line3");
   });
 })();
 </script>
