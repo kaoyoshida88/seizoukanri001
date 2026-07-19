@@ -230,8 +230,8 @@
     border-bottom: 1px solid var(--border);
     display: flex; align-items: baseline; gap: 8px;
   }
-  .panel-head h2 { font-size: 13px; margin: 0; font-weight: 700; }
-  .panel-head .sub { font-size: 11.5px; color: var(--ink-muted); }
+  .panel-head h2 { font-size: 24px; margin: 0; font-weight: 700; }
+  .panel-head .sub { font-size: 20px; color: var(--ink-muted); }
 
   /* line schematic */
   .line-body { flex: 1; min-height: 0; padding: 30px 26px; display: flex; align-items: center; position: relative; overflow: auto; }
@@ -243,7 +243,7 @@
   }
   @keyframes flow { from { left: 60px; } to { left: calc(100% - 66px); } }
   .stations { position: relative; display: flex; justify-content: space-between; width: 100%; z-index: 1; }
-  .station { display: flex; flex-direction: column; align-items: center; gap: 8px; width: 108px; }
+  .station { display: flex; flex-direction: column; align-items: center; gap: 10px; width: 150px; }
   .node {
     width: 56px; height: 56px; border-radius: 10px;
     background: var(--surface-2); border: 1.5px solid var(--border);
@@ -260,16 +260,16 @@
     0%, 100% { box-shadow: 0 0 0 4px color-mix(in srgb, var(--critical) 14%, transparent); }
     50% { box-shadow: 0 0 0 9px color-mix(in srgb, var(--critical) 4%, transparent); }
   }
-  .station-label { font-size: 11.5px; font-weight: 600; text-align: center; line-height: 1.25; }
-  .station-sub { font-size: 10.5px; font-family: var(--font-mono); color: var(--ink-muted); min-height: 13px; }
+  .station-label { font-size: 22px; font-weight: 600; text-align: center; line-height: 1.3; }
+  .station-sub { font-size: 20px; font-family: var(--font-mono); color: var(--ink-muted); min-height: 24px; }
   .station.critical .station-sub { color: var(--critical); font-weight: 700; }
 
   /* event log */
   .log-body { flex: 1; min-height: 0; overflow-y: auto; padding: 6px 0; }
-  .log-row { display: flex; gap: 9px; padding: 7px 16px; border-bottom: 1px solid var(--border); font-size: 12px; }
+  .log-row { display: flex; gap: 14px; padding: 12px 20px; border-bottom: 1px solid var(--border); font-size: 22px; line-height: 1.4; }
   .log-row:last-child { border-bottom: none; }
   .log-time { font-family: var(--font-mono); font-variant-numeric: tabular-nums; color: var(--ink-muted); flex: none; padding-top: 1px; }
-  .log-sev { width: 7px; height: 7px; border-radius: 50%; margin-top: 4px; flex: none; background: var(--ink-muted); }
+  .log-sev { width: 12px; height: 12px; border-radius: 50%; margin-top: 7px; flex: none; background: var(--ink-muted); }
   .log-sev.ok { background: var(--success); }
   .log-sev.warn { background: var(--warning); }
   .log-sev.critical { background: var(--critical); }
