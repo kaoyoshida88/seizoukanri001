@@ -20,11 +20,9 @@
     --shadow: 0 1px 2px rgba(16, 21, 31, 0.06), 0 8px 24px rgba(16, 21, 31, 0.06);
 
     /* mascot's own fixed palette — a fixed character identity, not restyled per theme */
-    --mascot-fur: #a9754c;
-    --mascot-fur-dark: #7c5033;
-    --mascot-cream: #f6e3c5;
-    --mascot-eye: #3a2416;
-    --mascot-blush: #efa9a0;
+    --mascot-fur-dark: #6e4c39;
+    --mascot-cream: #fffbf5;
+    --mascot-blush: #f4aab1;
 
     --font-display: "Yu Gothic", "Hiragino Kaku Gothic ProN", "Segoe UI", system-ui, -apple-system, "Noto Sans JP", sans-serif;
     --font-body: "Yu Gothic", "Hiragino Kaku Gothic ProN", "Segoe UI", system-ui, -apple-system, "Noto Sans JP", sans-serif;
@@ -715,25 +713,25 @@
   var MASCOT_H = 20;
   var MASCOT_MAP = [
     "....DDD....DDD....",
-    "....BAB....BAB....",
-    "....BAB....BAB....",
-    "....BAB....BAB....",
-    "....BAB....BAB....",
-    "....BAB....BAB....",
-    "....BAB....BAB....",
-    "..BBBBBBBBBBBBBB..",
-    "..BBBFFFFFFFFBBB..",
-    "..BBBFEEFFEEFBBB..",
-    "..BBBFFFFFFFFBBB..",
-    "..BBBPFFFFFFPBBB..",
-    "..BBBFFFPPFFFBBB..",
-    "..BBBFFFFFFFFBBB..",
-    "...BBBBBBBBBBBB...",
-    "....BBBBBBBBBB....",
-    "......BBBBBB......",
-    "....BBBBFFBBBB....",
-    "......BBBBBB......",
-    "......BB..BB......"
+    "....DFD....DFD....",
+    "....DFD....DFD....",
+    "....DFD....DFD....",
+    "....DFD....DFD....",
+    "....DFD....DFD....",
+    "....DFD....DFD....",
+    "..DDDDDDDDDDDDDD..",
+    "..DFFFFFFFFFFFFD..",
+    "..DFFFEEFFEEFFFD..",
+    "..DFFFFFFFFFFFFD..",
+    "..DPPFFFFFFFFPPD..",
+    "..DFFFFFDDFFFFFD..",
+    "..DFFFFFDFFFFFFD..",
+    "...DDDDDDDDDDDD...",
+    "....DDDDDDDDDD....",
+    "....DFFFFFFFFD....",
+    "..DDDFFFFFFFFDDD..",
+    "....DFFFFFFFFDD...",
+    ".....DD....DD....."
   ];
   var MASCOT_MAP_BLINK = MASCOT_MAP.map(function (row, i) {
     return (i === 9) ? row.replace(/E/g, "F") : row;
@@ -742,12 +740,11 @@
   var mctx = mascotCanvas.getContext("2d");
   function mascotColors() {
     var cs = getComputedStyle(document.documentElement);
+    var outline = cs.getPropertyValue("--mascot-fur-dark").trim();
     return {
-      A: cs.getPropertyValue("--mascot-cream").trim(),
-      B: cs.getPropertyValue("--mascot-fur").trim(),
-      D: cs.getPropertyValue("--mascot-fur-dark").trim(),
+      D: outline,
+      E: outline,
       F: cs.getPropertyValue("--mascot-cream").trim(),
-      E: cs.getPropertyValue("--mascot-eye").trim(),
       P: cs.getPropertyValue("--mascot-blush").trim()
     };
   }
