@@ -173,9 +173,9 @@
   /* ---------- Monitor strip ---------- */
   .monitor-strip {
     display: grid;
-    grid-template-columns: repeat(6, minmax(150px, 1fr));
-    gap: 10px;
-    padding: 12px 20px;
+    grid-template-columns: repeat(6, minmax(240px, 1fr));
+    gap: 14px;
+    padding: 18px 20px;
     background: var(--surface);
     border-bottom: 1px solid var(--border);
     overflow-x: auto;
@@ -183,28 +183,28 @@
   .mcard {
     position: relative;
     border: 1px solid var(--border);
-    border-radius: 8px;
+    border-radius: 10px;
     background: var(--surface-2);
-    padding: 10px 12px 11px;
-    min-width: 150px;
+    padding: 16px 18px 17px;
+    min-width: 240px;
     transition: border-color .3s, background .3s;
   }
   .mcard::before {
     content: "";
-    position: absolute; left: 0; top: 0; bottom: 0; width: 3px;
-    border-radius: 8px 0 0 8px;
+    position: absolute; left: 0; top: 0; bottom: 0; width: 5px;
+    border-radius: 10px 0 0 10px;
     background: var(--success);
     transition: background .3s;
   }
   .mcard.critical::before { background: var(--critical); }
   .mcard.critical { border-color: color-mix(in srgb, var(--critical) 40%, var(--border)); background: var(--critical-soft); }
-  .mcard-head { display: flex; align-items: center; gap: 6px; margin-bottom: 7px; }
-  .mcard-icon { width: 15px; height: 15px; color: var(--ink-muted); flex: none; }
+  .mcard-head { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; }
+  .mcard-icon { width: 26px; height: 26px; color: var(--ink-muted); flex: none; }
   .mcard.critical .mcard-icon { color: var(--critical); }
-  .mcard-title { font-size: 12px; font-weight: 700; letter-spacing: 0.01em; }
-  .mcard-status { margin-left: auto; width: 6px; height: 6px; border-radius: 50%; background: var(--success); flex: none; }
+  .mcard-title { font-size: 22px; font-weight: 700; letter-spacing: 0.01em; }
+  .mcard-status { margin-left: auto; width: 11px; height: 11px; border-radius: 50%; background: var(--success); flex: none; }
   .mcard.critical .mcard-status { background: var(--critical); animation: blink-dot 1s infinite; }
-  .mrow { display: flex; justify-content: space-between; align-items: baseline; font-size: 11.5px; color: var(--ink-muted); padding: 1.5px 0; }
+  .mrow { display: flex; justify-content: space-between; align-items: baseline; font-size: 20px; color: var(--ink-muted); padding: 4px 0; gap: 10px; }
   .mrow .v { font-family: var(--font-mono); font-variant-numeric: tabular-nums; color: var(--ink); font-weight: 600; }
   .mcard.critical .mrow .v.flag { color: var(--critical); }
 
