@@ -1,0 +1,846 @@
+<title>TP LineGuard AI ― 製造ライン監視モック</title>
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<style>
+  :root {
+    --bg: #eef1f6;
+    --surface: #ffffff;
+    --surface-2: #f5f7fb;
+    --border: #d7dee8;
+    --ink: #10151f;
+    --ink-muted: #57647a;
+    --accent: #0b5fa8;
+    --accent-strong: #073e73;
+    --accent-soft: #e2eef9;
+    --success: #1e8e5a;
+    --success-soft: #e3f5ec;
+    --warning: #c97a12;
+    --warning-soft: #fbedd9;
+    --critical: #d6402e;
+    --critical-soft: #fbe4e1;
+    --shadow: 0 1px 2px rgba(16, 21, 31, 0.06), 0 8px 24px rgba(16, 21, 31, 0.06);
+
+    --font-display: "Yu Gothic", "Hiragino Kaku Gothic ProN", "Segoe UI", system-ui, -apple-system, "Noto Sans JP", sans-serif;
+    --font-body: "Yu Gothic", "Hiragino Kaku Gothic ProN", "Segoe UI", system-ui, -apple-system, "Noto Sans JP", sans-serif;
+    --font-mono: ui-monospace, "Cascadia Mono", "SF Mono", Consolas, "Noto Sans Mono", monospace;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #0a0f17;
+      --surface: #121a26;
+      --surface-2: #17212f;
+      --border: #24303f;
+      --ink: #e6ecf4;
+      --ink-muted: #93a1b5;
+      --accent: #4c9ee6;
+      --accent-strong: #7fbbf0;
+      --accent-soft: #16283b;
+      --success: #3fbe84;
+      --success-soft: #113828;
+      --warning: #e3a73b;
+      --warning-soft: #3a2a10;
+      --critical: #e8604c;
+      --critical-soft: #3a1712;
+      --shadow: 0 1px 2px rgba(0, 0, 0, 0.4), 0 8px 24px rgba(0, 0, 0, 0.35);
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #0a0f17;
+    --surface: #121a26;
+    --surface-2: #17212f;
+    --border: #24303f;
+    --ink: #e6ecf4;
+    --ink-muted: #93a1b5;
+    --accent: #4c9ee6;
+    --accent-strong: #7fbbf0;
+    --accent-soft: #16283b;
+    --success: #3fbe84;
+    --success-soft: #113828;
+    --warning: #e3a73b;
+    --warning-soft: #3a2a10;
+    --critical: #e8604c;
+    --critical-soft: #3a1712;
+  }
+  :root[data-theme="light"] {
+    --bg: #eef1f6;
+    --surface: #ffffff;
+    --surface-2: #f5f7fb;
+    --border: #d7dee8;
+    --ink: #10151f;
+    --ink-muted: #57647a;
+    --accent: #0b5fa8;
+    --accent-strong: #073e73;
+    --accent-soft: #e2eef9;
+    --success: #1e8e5a;
+    --success-soft: #e3f5ec;
+    --warning: #c97a12;
+    --warning-soft: #fbedd9;
+    --critical: #d6402e;
+    --critical-soft: #fbe4e1;
+  }
+
+  * { box-sizing: border-box; }
+  html, body {
+    height: 100%;
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: var(--font-body);
+    -webkit-font-smoothing: antialiased;
+  }
+  body { overflow: hidden; }
+  button { font-family: inherit; }
+  ::selection { background: var(--accent-soft); }
+
+  .eyebrow {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.11em;
+    text-transform: uppercase;
+    color: var(--ink-muted);
+  }
+
+  /* ---------- App shell ---------- */
+  #app {
+    height: 100vh;
+    display: grid;
+    grid-template-rows: auto auto 1fr auto;
+    background: var(--bg);
+  }
+
+  /* ---------- Top bar ---------- */
+  .topbar {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 10px 20px;
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+  }
+  .brand { display: flex; align-items: center; gap: 10px; }
+  .brand-mark {
+    width: 32px; height: 32px;
+    border-radius: 7px;
+    background: linear-gradient(160deg, var(--accent), var(--accent-strong));
+    display: grid; place-items: center;
+    color: #fff; font-weight: 800; font-size: 13px; letter-spacing: 0.02em;
+    flex: none;
+  }
+  .brand-text { line-height: 1.15; }
+  .brand-text .product { font-weight: 800; font-size: 15px; letter-spacing: -0.01em; }
+  .brand-text .company { font-size: 11px; color: var(--ink-muted); }
+  .breadcrumb {
+    font-size: 12.5px; color: var(--ink-muted);
+    padding-left: 16px; margin-left: 4px;
+    border-left: 1px solid var(--border);
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .breadcrumb b { color: var(--ink); font-weight: 600; }
+  .topbar-spacer { flex: 1; }
+  .overall-pill {
+    display: flex; align-items: center; gap: 7px;
+    font-size: 12.5px; font-weight: 700;
+    padding: 6px 12px; border-radius: 100px;
+    background: var(--success-soft); color: var(--success);
+    transition: background .3s, color .3s;
+  }
+  .overall-pill.critical { background: var(--critical-soft); color: var(--critical); }
+  .overall-pill .dot { width: 7px; height: 7px; border-radius: 50%; background: currentColor; }
+  .overall-pill.critical .dot { animation: blink-dot 1s infinite; }
+  .clock {
+    font-family: var(--font-mono); font-variant-numeric: tabular-nums;
+    font-size: 12.5px; color: var(--ink-muted);
+    padding-left: 14px; border-left: 1px solid var(--border);
+  }
+  .user-chip {
+    display: flex; align-items: center; gap: 8px;
+    padding-left: 14px; border-left: 1px solid var(--border);
+    font-size: 12.5px;
+  }
+  .user-avatar {
+    width: 22px; height: 22px; border-radius: 50%;
+    background: var(--surface-2); border: 1px solid var(--border);
+    display: grid; place-items: center; font-size: 10px; font-weight: 700; color: var(--ink-muted);
+  }
+  .reset-btn {
+    border: 1px solid var(--border); background: var(--surface-2); color: var(--ink-muted);
+    font-size: 11.5px; font-weight: 600; padding: 6px 10px; border-radius: 6px; cursor: pointer;
+  }
+  .reset-btn:hover { color: var(--ink); border-color: var(--accent); }
+
+  @keyframes blink-dot { 0%, 100% { opacity: 1; } 50% { opacity: 0.25; } }
+
+  /* ---------- Monitor strip ---------- */
+  .monitor-strip {
+    display: grid;
+    grid-template-columns: repeat(6, minmax(150px, 1fr));
+    gap: 10px;
+    padding: 12px 20px;
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    overflow-x: auto;
+  }
+  .mcard {
+    position: relative;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    background: var(--surface-2);
+    padding: 10px 12px 11px;
+    min-width: 150px;
+    transition: border-color .3s, background .3s;
+  }
+  .mcard::before {
+    content: "";
+    position: absolute; left: 0; top: 0; bottom: 0; width: 3px;
+    border-radius: 8px 0 0 8px;
+    background: var(--success);
+    transition: background .3s;
+  }
+  .mcard.critical::before { background: var(--critical); }
+  .mcard.critical { border-color: color-mix(in srgb, var(--critical) 40%, var(--border)); background: var(--critical-soft); }
+  .mcard-head { display: flex; align-items: center; gap: 6px; margin-bottom: 7px; }
+  .mcard-icon { width: 15px; height: 15px; color: var(--ink-muted); flex: none; }
+  .mcard.critical .mcard-icon { color: var(--critical); }
+  .mcard-title { font-size: 12px; font-weight: 700; letter-spacing: 0.01em; }
+  .mcard-status { margin-left: auto; width: 6px; height: 6px; border-radius: 50%; background: var(--success); flex: none; }
+  .mcard.critical .mcard-status { background: var(--critical); animation: blink-dot 1s infinite; }
+  .mrow { display: flex; justify-content: space-between; align-items: baseline; font-size: 11.5px; color: var(--ink-muted); padding: 1.5px 0; }
+  .mrow .v { font-family: var(--font-mono); font-variant-numeric: tabular-nums; color: var(--ink); font-weight: 600; }
+  .mcard.critical .mrow .v.flag { color: var(--critical); }
+
+  /* ---------- Main stage ---------- */
+  .stage {
+    display: grid;
+    grid-template-columns: 1.4fr 1fr;
+    gap: 14px;
+    padding: 16px 20px;
+    overflow: hidden;
+    min-height: 0;
+  }
+  .panel {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    display: flex; flex-direction: column;
+    min-height: 0;
+    box-shadow: var(--shadow);
+  }
+  .panel-head {
+    padding: 12px 16px 10px;
+    border-bottom: 1px solid var(--border);
+    display: flex; align-items: baseline; gap: 8px;
+  }
+  .panel-head h2 { font-size: 13px; margin: 0; font-weight: 700; }
+  .panel-head .sub { font-size: 11.5px; color: var(--ink-muted); }
+
+  /* line schematic */
+  .line-body { flex: 1; min-height: 0; padding: 30px 26px; display: flex; align-items: center; position: relative; overflow: auto; }
+  .rail { position: absolute; left: 60px; right: 60px; top: 50%; height: 2px; background: var(--border); transform: translateY(-50%); }
+  .flow-dot {
+    position: absolute; top: 50%; width: 6px; height: 6px; margin-top: -3px; border-radius: 50%;
+    background: var(--accent); opacity: 0.55;
+    animation: flow 3.4s linear infinite;
+  }
+  @keyframes flow { from { left: 60px; } to { left: calc(100% - 66px); } }
+  .stations { position: relative; display: flex; justify-content: space-between; width: 100%; z-index: 1; }
+  .station { display: flex; flex-direction: column; align-items: center; gap: 8px; width: 108px; }
+  .node {
+    width: 56px; height: 56px; border-radius: 10px;
+    background: var(--surface-2); border: 1.5px solid var(--border);
+    display: grid; place-items: center; color: var(--ink-muted);
+    transition: border-color .3s, box-shadow .3s, background .3s;
+  }
+  .node svg { width: 26px; height: 26px; }
+  .station.critical .node {
+    border-color: var(--critical); color: var(--critical); background: var(--critical-soft);
+    box-shadow: 0 0 0 5px color-mix(in srgb, var(--critical) 16%, transparent);
+    animation: pulse-ring 1.4s ease-in-out infinite;
+  }
+  @keyframes pulse-ring {
+    0%, 100% { box-shadow: 0 0 0 4px color-mix(in srgb, var(--critical) 14%, transparent); }
+    50% { box-shadow: 0 0 0 9px color-mix(in srgb, var(--critical) 4%, transparent); }
+  }
+  .station-label { font-size: 11.5px; font-weight: 600; text-align: center; line-height: 1.25; }
+  .station-sub { font-size: 10.5px; font-family: var(--font-mono); color: var(--ink-muted); min-height: 13px; }
+  .station.critical .station-sub { color: var(--critical); font-weight: 700; }
+
+  /* event log */
+  .log-body { flex: 1; min-height: 0; overflow-y: auto; padding: 6px 0; }
+  .log-row { display: flex; gap: 9px; padding: 7px 16px; border-bottom: 1px solid var(--border); font-size: 12px; }
+  .log-row:last-child { border-bottom: none; }
+  .log-time { font-family: var(--font-mono); font-variant-numeric: tabular-nums; color: var(--ink-muted); flex: none; padding-top: 1px; }
+  .log-sev { width: 7px; height: 7px; border-radius: 50%; margin-top: 4px; flex: none; background: var(--ink-muted); }
+  .log-sev.ok { background: var(--success); }
+  .log-sev.warn { background: var(--warning); }
+  .log-sev.critical { background: var(--critical); }
+  .log-msg { color: var(--ink); }
+  .log-msg .tag { color: var(--ink-muted); }
+
+  /* ---------- AI agent dock ---------- */
+  .dock {
+    border-top: 1px solid var(--border);
+    background: var(--surface);
+    display: flex; flex-direction: column;
+  }
+  .proposal {
+    max-height: 0; overflow: hidden;
+    transition: max-height .4s ease;
+    border-bottom: 1px solid var(--border);
+  }
+  .proposal.open { max-height: 320px; }
+  .proposal-inner { padding: 14px 20px 16px; display: flex; gap: 16px; }
+  .proposal-stripe { width: 3px; border-radius: 3px; background: var(--critical); flex: none; }
+  .proposal-body { flex: 1; min-width: 0; }
+  .proposal-title { font-size: 13px; font-weight: 800; margin: 0 0 4px; }
+  .proposal-evidence { font-size: 12px; color: var(--ink-muted); margin: 0 0 10px; }
+  .proposal-evidence .v { font-family: var(--font-mono); color: var(--critical); font-weight: 700; }
+  .proposal-list { list-style: none; margin: 0 0 12px; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+  .proposal-list li {
+    display: flex; gap: 9px; font-size: 12.5px; align-items: flex-start;
+  }
+  .step-badge {
+    flex: none; width: 18px; height: 18px; border-radius: 5px;
+    background: var(--accent-soft); color: var(--accent-strong);
+    font-size: 10.5px; font-weight: 800; display: grid; place-items: center;
+    font-family: var(--font-mono);
+  }
+  .proposal-list li.done .step-badge { background: var(--success); color: #fff; }
+  .proposal-list li.done { color: var(--ink-muted); }
+  .proposal-actions { display: flex; gap: 8px; }
+  .btn {
+    border: none; border-radius: 7px; padding: 8px 16px; font-size: 12.5px; font-weight: 700;
+    cursor: pointer; transition: filter .15s, opacity .15s;
+  }
+  .btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  .btn-primary { background: var(--accent); color: #fff; }
+  .btn-primary:hover { filter: brightness(1.08); }
+  .btn-primary[disabled] { opacity: 0.5; cursor: default; }
+  .btn-ghost { background: var(--surface-2); color: var(--ink-muted); border: 1px solid var(--border); }
+  .btn-ghost:hover { color: var(--ink); }
+
+  .dock-main { display: flex; align-items: center; gap: 14px; padding: 12px 20px; min-height: 66px; }
+  .mascot-wrap { position: relative; flex: none; width: 56px; height: 56px; }
+  #mascot { width: 56px; height: 56px; image-rendering: pixelated; display: block; }
+  .mascot-ring {
+    position: absolute; inset: -4px; border-radius: 14px;
+    border: 2px solid transparent; pointer-events: none;
+  }
+  .mascot-wrap.alert .mascot-ring { border-color: var(--critical); animation: ring-pulse 1s ease-in-out infinite; }
+  .mascot-wrap.busy .mascot-ring { border-color: var(--accent); animation: ring-spin 1.1s linear infinite; border-style: dashed; }
+  @keyframes ring-pulse { 0%, 100% { opacity: .35; transform: scale(1); } 50% { opacity: 1; transform: scale(1.06); } }
+  @keyframes ring-spin { to { transform: rotate(360deg); } }
+
+  .dock-text { flex: 1; min-width: 0; }
+  .dock-name { font-size: 11.5px; font-weight: 700; color: var(--ink-muted); margin-bottom: 2px; display: flex; gap: 6px; align-items: center; }
+  .dock-name .live-dot { width: 5px; height: 5px; border-radius: 50%; background: var(--success); }
+  .dock-msg { font-size: 13.5px; line-height: 1.4; }
+  .dock-msg .type-cursor { display: inline-block; width: 6px; height: 13px; background: var(--ink-muted); margin-left: 2px; vertical-align: -2px; animation: blink-dot .8s infinite; }
+
+  @media (prefers-reduced-motion: reduce) {
+    .flow-dot, .station.critical .node, .overall-pill.critical .dot, .mcard.critical .mcard-status,
+    .mascot-wrap.alert .mascot-ring, .mascot-wrap.busy .mascot-ring, .dock-name .live-dot { animation: none !important; }
+  }
+
+  /* ---------- Login ---------- */
+  #login {
+    position: fixed; inset: 0; z-index: 50;
+    display: flex; align-items: center; justify-content: center;
+    background:
+      radial-gradient(circle at 15% 20%, color-mix(in srgb, var(--accent) 10%, transparent), transparent 45%),
+      radial-gradient(circle at 85% 80%, color-mix(in srgb, var(--accent) 8%, transparent), transparent 45%),
+      var(--bg);
+  }
+  #login::before {
+    content: ""; position: absolute; inset: 0;
+    background-image:
+      linear-gradient(color-mix(in srgb, var(--ink) 4%, transparent) 1px, transparent 1px),
+      linear-gradient(90deg, color-mix(in srgb, var(--ink) 4%, transparent) 1px, transparent 1px);
+    background-size: 42px 42px;
+    -webkit-mask-image: radial-gradient(circle at 50% 40%, black, transparent 75%);
+            mask-image: radial-gradient(circle at 50% 40%, black, transparent 75%);
+  }
+  .login-card {
+    position: relative; z-index: 1;
+    width: 360px; background: var(--surface); border: 1px solid var(--border);
+    border-radius: 12px; box-shadow: var(--shadow); padding: 30px 28px 26px;
+  }
+  .login-brand { display: flex; flex-direction: column; align-items: center; gap: 10px; margin-bottom: 22px; }
+  .login-mark {
+    width: 46px; height: 46px; border-radius: 11px;
+    background: linear-gradient(160deg, var(--accent), var(--accent-strong));
+    display: grid; place-items: center; color: #fff; font-weight: 800; font-size: 17px;
+  }
+  .login-brand .product { font-size: 17px; font-weight: 800; letter-spacing: -0.01em; text-wrap: balance; text-align: center; }
+  .login-brand .company { font-size: 12px; color: var(--ink-muted); }
+  .field { margin-bottom: 13px; }
+  .field label { display: block; font-size: 11.5px; font-weight: 700; color: var(--ink-muted); margin-bottom: 5px; }
+  .field input {
+    width: 100%; padding: 9px 11px; border-radius: 7px; border: 1px solid var(--border);
+    background: var(--surface-2); color: var(--ink); font-size: 13.5px; font-family: inherit;
+  }
+  .field input:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+  .login-submit {
+    width: 100%; margin-top: 6px; padding: 10px; border-radius: 7px; border: none;
+    background: var(--accent); color: #fff; font-size: 13.5px; font-weight: 700; cursor: pointer;
+  }
+  .login-submit:hover { filter: brightness(1.08); }
+  .login-note { margin-top: 16px; font-size: 11px; color: var(--ink-muted); text-align: center; line-height: 1.5; }
+
+  #app[hidden] { display: none; }
+</style>
+
+<div id="login">
+  <form class="login-card" id="login-form">
+    <div class="login-brand">
+      <div class="login-mark">TP</div>
+      <div class="product">TP LineGuard AI</div>
+      <div class="company">株式会社テクノプロ ― 製造ライン監視・自律対応エージェント</div>
+    </div>
+    <div class="field">
+      <label for="f-company">会社名</label>
+      <input id="f-company" value="サンプル精密工業株式会社" />
+    </div>
+    <div class="field">
+      <label for="f-user">ユーザーID</label>
+      <input id="f-user" value="k.yamada" />
+    </div>
+    <div class="field">
+      <label for="f-pass">パスワード</label>
+      <input id="f-pass" type="password" value="••••••••" />
+    </div>
+    <button class="login-submit" type="submit">ログイン</button>
+    <p class="login-note">これはデモ用モックです。入力内容に関わらずログインできます。<br>ログイン後、約10秒で監視シナリオが自動的に開始します。</p>
+  </form>
+</div>
+
+<div id="app" hidden>
+  <header class="topbar">
+    <div class="brand">
+      <div class="brand-mark">TP</div>
+      <div class="brand-text">
+        <div class="product">TP LineGuard AI</div>
+        <div class="company">株式会社テクノプロ</div>
+      </div>
+    </div>
+    <div class="breadcrumb"><b>サンプル精密工業株式会社</b> / 第2工場 / 加工ライン3</div>
+    <div class="topbar-spacer"></div>
+    <div class="overall-pill" id="overall-pill"><span class="dot"></span><span id="overall-text">全項目 正常稼働中</span></div>
+    <div class="clock" id="clock">--:--:--</div>
+    <div class="user-chip"><div class="user-avatar">山</div>山田 健太</div>
+    <button class="reset-btn" id="reset-btn" type="button">デモをリセット</button>
+  </header>
+
+  <section class="monitor-strip" id="monitor-strip"></section>
+
+  <section class="stage">
+    <div class="panel">
+      <div class="panel-head">
+        <h2>生産ライン模式図</h2>
+        <span class="sub">加工ライン3 ― 投入から完成検査まで</span>
+      </div>
+      <div class="line-body">
+        <div class="rail"></div>
+        <div class="flow-dot" style="animation-delay:0s"></div>
+        <div class="flow-dot" style="animation-delay:0.7s"></div>
+        <div class="flow-dot" style="animation-delay:1.4s"></div>
+        <div class="flow-dot" style="animation-delay:2.1s"></div>
+        <div class="flow-dot" style="animation-delay:2.8s"></div>
+        <div class="stations" id="stations"></div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="panel-head">
+        <h2>イベントログ</h2>
+        <span class="sub">リアルタイム</span>
+      </div>
+      <div class="log-body" id="log-body"></div>
+    </div>
+  </section>
+
+  <div class="dock">
+    <div class="proposal" id="proposal">
+      <div class="proposal-inner">
+        <div class="proposal-stripe"></div>
+        <div class="proposal-body">
+          <p class="proposal-title">対処案 ― 刃具摩耗パターンを検出</p>
+          <p class="proposal-evidence">主軸電流 <span class="v" id="ev-current">+0%</span> ／ 振動 <span class="v" id="ev-vibe">+0%</span> ／ 寸法測定値が上限規格に接近</p>
+          <ol class="proposal-list" id="proposal-list">
+            <li><span class="step-badge">1</span><span>刃具交換を実施</span></li>
+            <li><span class="step-badge">2</span><span>交換後の補正値を自動計算して適用（X軸 +0.02mm／Y軸 −0.01mm）</span></li>
+            <li><span class="step-badge">3</span><span>対象ロット #L-2291〜#L-2298 を別条件で再加工キューへ登録</span></li>
+          </ol>
+          <div class="proposal-actions">
+            <button class="btn btn-primary" id="approve-btn" type="button">承認して実行</button>
+            <button class="btn btn-ghost" id="hold-btn" type="button">保留する</button>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="dock-main">
+      <div class="mascot-wrap" id="mascot-wrap">
+        <canvas id="mascot" width="16" height="16"></canvas>
+        <div class="mascot-ring"></div>
+      </div>
+      <div class="dock-text">
+        <div class="dock-name"><span class="live-dot"></span>AIエージェント ― 監視アシスタント</div>
+        <div class="dock-msg" id="dock-msg">起動しています…</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+(function () {
+  "use strict";
+  var reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+  /* ---------------- Categories / monitor strip ---------------- */
+  var ICONS = {
+    equipment: '<path d="M12 3v3M12 18v3M3 12h3M18 12h3M6 6l2 2M16 16l2 2M6 18l2-2M16 8l2-2" stroke="currentColor" stroke-width="1.6" fill="none" stroke-linecap="round"/><circle cx="12" cy="12" r="4.2" stroke="currentColor" stroke-width="1.6" fill="none"/>',
+    quality: '<rect x="4" y="4" width="16" height="16" rx="2.5" stroke="currentColor" stroke-width="1.6" fill="none"/><path d="M8 12.5l2.5 2.5L16 9.5" stroke="currentColor" stroke-width="1.7" fill="none" stroke-linecap="round" stroke-linejoin="round"/>',
+    process: '<rect x="4" y="13" width="3.6" height="7" rx="0.8" fill="currentColor"/><rect x="10.2" y="8" width="3.6" height="12" rx="0.8" fill="currentColor"/><rect x="16.4" y="4" width="3.6" height="16" rx="0.8" fill="currentColor"/>',
+    tools: '<path d="M14.5 4.5a3.6 3.6 0 0 0-4.8 4.2L4 14.4v3.1h3.1l5.7-5.7a3.6 3.6 0 0 0 4.2-4.8l-2.3 2.3-1.7-1.7 2.3-2.3z" stroke="currentColor" stroke-width="1.5" fill="none" stroke-linejoin="round"/>',
+    transport: '<path d="M4 17V9a2 2 0 0 1 2-2h6l4 4h2a2 2 0 0 1 2 2v4" stroke="currentColor" stroke-width="1.6" fill="none" stroke-linecap="round" stroke-linejoin="round"/><circle cx="8" cy="18" r="1.8" fill="currentColor"/><circle cx="17" cy="18" r="1.8" fill="currentColor"/>',
+    safety: '<path d="M12 3.5l7 2.6v5.3c0 4.6-3 8.3-7 9.1-4-0.8-7-4.5-7-9.1V6.1z" stroke="currentColor" stroke-width="1.6" fill="none" stroke-linejoin="round"/><path d="M9 12l2.2 2.2L15.5 9.5" stroke="currentColor" stroke-width="1.7" fill="none" stroke-linecap="round" stroke-linejoin="round"/>'
+  };
+
+  var categories = [
+    { id: "equipment", title: "設備状態", metrics: [
+      { id: "current", label: "主軸電流", unit: "A", base: 68, dp: 0 },
+      { id: "vibe", label: "振動", unit: "mm/s", base: 1.2, dp: 1 },
+      { id: "temp", label: "温度", unit: "℃", base: 41, dp: 0 }
+    ] },
+    { id: "quality", title: "品質情報", metrics: [
+      { id: "dim", label: "寸法測定値", unit: "mm", base: 20.020, dp: 3 },
+      { id: "okrate", label: "外観検査OK率", unit: "%", base: 99.6, dp: 1 }
+    ] },
+    { id: "process", title: "工程進捗", metrics: [
+      { id: "wip", label: "WIP", unit: "個", base: 24, dp: 0 },
+      { id: "dwell", label: "平均滞留", unit: "min", base: 6.4, dp: 1 }
+    ] },
+    { id: "tools", title: "材料/治具/工具", metrics: [
+      { id: "toollife", label: "工具寿命残り", unit: "%", base: 46, dp: 0 },
+      { id: "jig", label: "治具状態", unit: "", text: "使用可" }
+    ] },
+    { id: "transport", title: "搬送/ロボット", metrics: [
+      { id: "robot", label: "稼働状態", unit: "", text: "正常" },
+      { id: "comm", label: "通信", unit: "", text: "正常" }
+    ] },
+    { id: "safety", title: "安全/環境", metrics: [
+      { id: "door", label: "扉状態", unit: "", text: "閉" },
+      { id: "air", label: "エア圧", unit: "MPa", base: 0.52, dp: 2 }
+    ] }
+  ];
+
+  var strip = document.getElementById("monitor-strip");
+  categories.forEach(function (cat) {
+    var card = document.createElement("div");
+    card.className = "mcard";
+    card.id = "mcard-" + cat.id;
+    var rows = cat.metrics.map(function (m) {
+      return '<div class="mrow"><span>' + m.label + '</span><span class="v" id="m-' + m.id + '">' +
+        (m.text ? m.text : m.base.toFixed(m.dp) + (m.unit ? " " + m.unit : "")) + '</span></div>';
+    }).join("");
+    card.innerHTML =
+      '<div class="mcard-head"><svg class="mcard-icon" viewBox="0 0 24 24">' + ICONS[cat.id] + '</svg>' +
+      '<span class="mcard-title">' + cat.title + '</span><span class="mcard-status"></span></div>' + rows;
+    strip.appendChild(card);
+  });
+
+  function setMetric(id, text, flag) {
+    var el = document.getElementById("m-" + id);
+    if (!el) return;
+    el.textContent = text;
+    el.classList.toggle("flag", !!flag);
+  }
+  function setCardState(id, critical) {
+    var el = document.getElementById("mcard-" + id);
+    if (el) el.classList.toggle("critical", critical);
+  }
+
+  /* ---------------- Line schematic ---------------- */
+  var STATION_ICON = {
+    in: '<path d="M4 12h13M13 7l5 5-5 5" stroke="currentColor" stroke-width="1.7" fill="none" stroke-linecap="round" stroke-linejoin="round"/>',
+    rough: '<circle cx="12" cy="12" r="7" stroke="currentColor" stroke-width="1.6" fill="none"/><path d="M12 8v4l3 2" stroke="currentColor" stroke-width="1.6" fill="none" stroke-linecap="round"/>',
+    cnc: '<circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="1.6" fill="none"/><path d="M12 3v3M12 18v3M3 12h3M18 12h3M6 6l2 2M16 16l2 2M6 18l2-2M16 8l2-2" stroke="currentColor" stroke-width="1.6" fill="none" stroke-linecap="round"/>',
+    inspect: '<rect x="4" y="4" width="16" height="16" rx="2.5" stroke="currentColor" stroke-width="1.6" fill="none"/><path d="M8 12.5l2.5 2.5L16 9.5" stroke="currentColor" stroke-width="1.7" fill="none" stroke-linecap="round" stroke-linejoin="round"/>',
+    done: '<path d="M4.5 12.5l4.5 4.5L19.5 6" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>'
+  };
+  var stations = [
+    { id: "in", label: "投入" },
+    { id: "rough", label: "粗加工" },
+    { id: "cnc", label: "CNC旋盤仕上げ", sub: true },
+    { id: "inspect", label: "検査" },
+    { id: "done", label: "完成" }
+  ];
+  var stationsEl = document.getElementById("stations");
+  stations.forEach(function (s) {
+    var el = document.createElement("div");
+    el.className = "station";
+    el.id = "station-" + s.id;
+    el.innerHTML = '<div class="node"><svg viewBox="0 0 24 24">' + STATION_ICON[s.id] + '</svg></div>' +
+      '<div class="station-label">' + s.label + '</div>' +
+      '<div class="station-sub" id="station-sub-' + s.id + '"></div>';
+    stationsEl.appendChild(el);
+  });
+
+  /* ---------------- Event log ---------------- */
+  var logBody = document.getElementById("log-body");
+  function logEvent(sev, tag, msg) {
+    var row = document.createElement("div");
+    row.className = "log-row";
+    var t = new Date().toLocaleTimeString("ja-JP", { hour12: false });
+    row.innerHTML = '<span class="log-time">' + t + '</span><span class="log-sev ' + sev + '"></span>' +
+      '<span class="log-msg">' + (tag ? '<span class="tag">[' + tag + ']</span> ' : '') + msg + '</span>';
+    logBody.insertBefore(row, logBody.firstChild);
+  }
+
+  /* ---------------- Overall status pill ---------------- */
+  var overallPill = document.getElementById("overall-pill");
+  var overallText = document.getElementById("overall-text");
+  function setOverall(critical, text) {
+    overallPill.classList.toggle("critical", critical);
+    overallText.textContent = text;
+  }
+
+  /* ---------------- Clock ---------------- */
+  var clockEl = document.getElementById("clock");
+  function tickClock() { clockEl.textContent = new Date().toLocaleTimeString("ja-JP", { hour12: false }); }
+  tickClock();
+  setInterval(tickClock, 1000);
+
+  /* ---------------- Mascot (pixel canvas) ---------------- */
+  var MASCOT_MAP = [
+    "................",
+    "................",
+    ".......AA.......",
+    ".......AA.......",
+    "....BBBBBBBB....",
+    "....BFFFFFFB....",
+    "....BFEFFEFB....",
+    "....BFFFFFFB....",
+    "....BFFDDFFB....",
+    "....BBBBBBBB....",
+    "....B..BB..B....",
+    "...BBBBBBBBBB...",
+    "..BBBBBBBBBBBB..",
+    "..BBBBBHHBBBBB..",
+    "..BBBBBBBBBBBB..",
+    "................"
+  ];
+  var MASCOT_MAP_BLINK = MASCOT_MAP.map(function (row, i) {
+    return (i === 6) ? row.replace(/E/g, "F") : row;
+  });
+  var mascotCanvas = document.getElementById("mascot");
+  var mctx = mascotCanvas.getContext("2d");
+  function mascotColors() {
+    var cs = getComputedStyle(document.documentElement);
+    return {
+      A: cs.getPropertyValue("--ink-muted").trim(),
+      B: cs.getPropertyValue("--accent").trim(),
+      F: cs.getPropertyValue("--surface").trim(),
+      E: cs.getPropertyValue("--accent-strong").trim(),
+      D: cs.getPropertyValue("--accent-strong").trim(),
+      H: cs.getPropertyValue("--success").trim()
+    };
+  }
+  function drawMascot(map) {
+    var colors = mascotColors();
+    mctx.clearRect(0, 0, 16, 16);
+    map.forEach(function (row, y) {
+      for (var x = 0; x < row.length; x++) {
+        var c = row[x];
+        if (c === ".") continue;
+        mctx.fillStyle = colors[c] || "#888";
+        mctx.fillRect(x, y, 1, 1);
+      }
+    });
+  }
+  drawMascot(MASCOT_MAP);
+  var blinkTimer = setInterval(function () {
+    if (document.hidden) return;
+    drawMascot(MASCOT_MAP_BLINK);
+    setTimeout(function () { drawMascot(MASCOT_MAP); }, 120);
+  }, 4200);
+
+  var mascotWrap = document.getElementById("mascot-wrap");
+  function setMascotState(state) {
+    mascotWrap.classList.toggle("alert", state === "alert");
+    mascotWrap.classList.toggle("busy", state === "busy");
+  }
+
+  /* ---------------- Dock message ---------------- */
+  var dockMsg = document.getElementById("dock-msg");
+  var msgTimers = [];
+  function clearMsgTimers() { msgTimers.forEach(clearTimeout); msgTimers = []; }
+  function say(text) { dockMsg.textContent = text; }
+  function sayQueue(lines, gap) {
+    clearMsgTimers();
+    lines.forEach(function (line, i) {
+      msgTimers.push(setTimeout(function () { say(line); }, i * gap));
+    });
+  }
+
+  /* ---------------- Proposal panel ---------------- */
+  var proposal = document.getElementById("proposal");
+  var approveBtn = document.getElementById("approve-btn");
+  var holdBtn = document.getElementById("hold-btn");
+  var proposalItems = document.querySelectorAll("#proposal-list li");
+  var evCurrent = document.getElementById("ev-current");
+  var evVibe = document.getElementById("ev-vibe");
+
+  /* ---------------- Scenario ---------------- */
+  var timers = [];
+  function after(ms, fn) { var id = setTimeout(fn, ms); timers.push(id); return id; }
+  function clearScenario() { timers.forEach(clearTimeout); timers = []; clearMsgTimers(); }
+
+  function lerp(a, b, t) { return a + (b - a) * t; }
+
+  function animateMetric(id, from, to, dp, unit, duration, onFrame) {
+    var start = performance.now();
+    function frame(now) {
+      var t = Math.min(1, (now - start) / duration);
+      var val = lerp(from, to, t);
+      setMetric(id, val.toFixed(dp) + (unit ? " " + unit : ""), t > 0.15);
+      if (onFrame) onFrame(t, val);
+      if (t < 1) requestAnimationFrame(frame);
+    }
+    requestAnimationFrame(frame);
+  }
+
+  function resetDashboard() {
+    clearScenario();
+    proposal.classList.remove("open");
+    approveBtn.disabled = false;
+    approveBtn.textContent = "承認して実行";
+    proposalItems.forEach(function (li) { li.classList.remove("done"); });
+    setMascotState("idle");
+    setOverall(false, "全項目 正常稼働中");
+    categories.forEach(function (cat) {
+      setCardState(cat.id, false);
+      cat.metrics.forEach(function (m) {
+        setMetric(m.id, m.text ? m.text : m.base.toFixed(m.dp) + (m.unit ? " " + m.unit : ""), false);
+      });
+    });
+    document.getElementById("station-cnc").classList.remove("critical");
+    document.getElementById("station-sub-cnc").textContent = "";
+    logBody.innerHTML = "";
+    logEvent("ok", "system", "TP LineGuard AI を起動しました。加工ライン3の監視を開始します。");
+    say("各製造ラインは安定稼働しております。引き続き監視中です。");
+  }
+
+  function runScenario() {
+    after(400, function () {
+      logEvent("ok", "監視", "6カテゴリ・全監視項目 正常範囲内。");
+    });
+
+    // --- ramp up anomaly ---
+    after(10000, function () {
+      logEvent("warn", "検知", "CNC旋盤仕上げ工程で主軸電流の緩やかな上昇を検知。経過を追跡します。");
+      say("CNC旋盤仕上げ工程の主軸電流にわずかな上昇傾向があります。経過を確認しています…");
+      document.getElementById("station-cnc").classList.add("critical");
+      document.getElementById("station-sub-cnc").textContent = "電流上昇中";
+
+      animateMetric("current", 68, 84, 0, "A", 2600);
+      animateMetric("vibe", 1.2, 2.4, 1, "mm/s", 2600);
+      animateMetric("dim", 20.020, 20.048, 3, "mm", 2600);
+      animateMetric("toollife", 46, 12, 0, "%", 2600);
+      animateMetric("okrate", 99.6, 97.1, 1, "%", 2600);
+    });
+
+    after(13200, function () {
+      setCardState("equipment", true);
+      setCardState("quality", true);
+      setCardState("tools", true);
+      setOverall(true, "1件の異常を検知");
+      document.getElementById("station-sub-cnc").textContent = "要対応";
+      setMascotState("alert");
+      logEvent("critical", "異常", "主軸電流 +24%／振動 +100%／寸法測定値が上限規格(20.050mm)に接近。刃具摩耗パターンの疑い。");
+      sayQueue([
+        "異常を検知しました。原因を解析しています…",
+        "刃具摩耗パターンの兆候と一致しました。対処案をまとめています…"
+      ], 1400);
+    });
+
+    after(16400, function () {
+      evCurrent.textContent = "+24%";
+      evVibe.textContent = "+100%";
+      proposal.classList.add("open");
+      logEvent("critical", "AI提案", "対処案を提示しました。承認待ちです。");
+      say("対処案を提示しました。内容をご確認のうえ、実行の可否をご判断ください。");
+    });
+  }
+
+  function executeRemediation() {
+    approveBtn.disabled = true;
+    holdBtn.disabled = true;
+    approveBtn.textContent = "実行中…";
+    setMascotState("busy");
+    logEvent("ok", "承認", "対処案が承認されました。TECHSと連携し自動実行します。");
+    say("対処案を実行しています…");
+
+    var stepDelays = [700, 1500, 2300];
+    stepDelays.forEach(function (d, i) {
+      after(d, function () {
+        proposalItems[i].classList.add("done");
+        if (i === 0) logEvent("ok", "TECHS連携", "工具交換指示を送信し、工具寿命カウンタをリセットしました。");
+        if (i === 1) logEvent("ok", "TECHS連携", "補正値（X軸 +0.02mm／Y軸 −0.01mm）を加工条件に適用しました。");
+        if (i === 2) logEvent("ok", "TECHS連携", "対象ロット #L-2291〜#L-2298 を再加工キューへ登録しました。");
+      });
+    });
+
+    after(3000, function () {
+      say("刃具交換と補正が完了しました。数値の復旧を確認しています…");
+      animateMetric("current", 84, 68, 0, "A", 2200);
+      animateMetric("vibe", 2.4, 1.2, 1, "mm/s", 2200);
+      animateMetric("dim", 20.048, 20.020, 3, "mm", 2200);
+      animateMetric("toollife", 12, 96, 0, "%", 2200);
+      animateMetric("okrate", 97.1, 99.8, 1, "%", 2200);
+    });
+
+    after(5300, function () {
+      setCardState("equipment", false);
+      setCardState("quality", false);
+      setCardState("tools", false);
+      setOverall(false, "全項目 正常稼働中");
+      setMascotState("idle");
+      document.getElementById("station-cnc").classList.remove("critical");
+      document.getElementById("station-sub-cnc").textContent = "";
+      logEvent("ok", "復旧", "全監視項目が正常値に復旧しました。監視を継続します。");
+      say("全ての監視項目が正常値に復旧しました。刃具寿命カウンタをリセットし、再加工ロットの指示を完了しています。引き続き監視を継続します。");
+      after(2600, function () {
+        proposal.classList.remove("open");
+        approveBtn.disabled = false;
+        holdBtn.disabled = false;
+        approveBtn.textContent = "承認して実行";
+        proposalItems.forEach(function (li) { li.classList.remove("done"); });
+      });
+    });
+  }
+
+  approveBtn.addEventListener("click", function () {
+    timers.forEach(clearTimeout); // stop any pending scenario timers, keep proposal open
+    executeRemediation();
+  });
+  holdBtn.addEventListener("click", function () {
+    logEvent("warn", "保留", "対応を保留しました。監視項目は異常のまま継続監視します。");
+    say("対応を保留しました。異常が継続する場合は再度ご確認ください。");
+  });
+
+  document.getElementById("reset-btn").addEventListener("click", function () {
+    resetDashboard();
+    runScenario();
+  });
+
+  /* ---------------- Login → dashboard ---------------- */
+  document.getElementById("login-form").addEventListener("submit", function (e) {
+    e.preventDefault();
+    document.getElementById("login").remove();
+    var app = document.getElementById("app");
+    app.hidden = false;
+    resetDashboard();
+    runScenario();
+  });
+})();
+</script>
