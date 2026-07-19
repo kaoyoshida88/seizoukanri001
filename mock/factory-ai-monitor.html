@@ -710,7 +710,8 @@
 
   var MASCOT_W = 18;
   var MASCOT_H = 17;
-  var MASCOT_MAP = [
+  // shared head/ear/shoulder shell — rows 8, 12, 13 (brow / mouth) are swapped per expression
+  var MASCOT_FACE_IDLE = [
     "....GGG....GGG....",
     "....GGG....GGG....",
     "....GGG....GGG....",
@@ -723,15 +724,41 @@
     "..GGGGKKGGKKGGGG..",
     "..GGGGGGGGGGGGGG..",
     "..GGGGGGGGGGGGGG..",
-    "..GGGGGGKKGGGGGG..",
     "..GGGGGKGGKGGGGG..",
+    "..GGGGGGKKGGGGGG..",
     "...GGGGGGGGGGGG...",
     ".GGGGGGGGGGGGGGGG.",
     "GGGGGGGGGGGGGGGGGG"
   ];
-  var MASCOT_MAP_BLINK = MASCOT_MAP.map(function (row, i) {
-    return (i === 9) ? row.replace(/K/g, "G") : row;
-  });
+  var MASCOT_FACE_ALERT = [
+    "....GGG....GGG....",
+    "....GGG....GGG....",
+    "....GGG....GGG....",
+    "....GKG....GKG....",
+    "....GKG....GKG....",
+    "....GKG....GKG....",
+    "....GKG....GKG....",
+    "..GGGGGGGGGGGGGG..",
+    "..GGGGKKGGKKGGGG..",
+    "..GGGGKKGGKKGGGG..",
+    "..GGGGGGGGGGGGGG..",
+    "..GGGGGGGGGGGGGG..",
+    "..GGGGGGGGGGGGGG..",
+    "..GGGGGKKKKGGGGG..",
+    "...GGGGGGGGGGGG...",
+    ".GGGGGGGGGGGGGGGG.",
+    "GGGGGGGGGGGGGGGGGG"
+  ];
+  function blinkOf(map) {
+    return map.map(function (row, i) {
+      return (i === 9) ? row.replace(/K/g, "G") : row;
+    });
+  }
+  var MASCOT_FACES = {
+    idle: { open: MASCOT_FACE_IDLE, blink: blinkOf(MASCOT_FACE_IDLE) },
+    alert: { open: MASCOT_FACE_ALERT, blink: blinkOf(MASCOT_FACE_ALERT) },
+    busy: { open: MASCOT_FACE_ALERT, blink: blinkOf(MASCOT_FACE_ALERT) }
+  };
   var mascotCanvas = document.getElementById("mascot");
   var mctx = mascotCanvas.getContext("2d");
   function mascotColors() {
@@ -753,11 +780,16 @@
       }
     });
   }
-  drawMascot(MASCOT_MAP);
+  var currentFace = MASCOT_FACES.idle;
+  function setMascotFace(state) {
+    currentFace = MASCOT_FACES[state] || MASCOT_FACES.idle;
+    drawMascot(currentFace.open);
+  }
+  setMascotFace("idle");
   setInterval(function () {
     if (document.hidden) return;
-    drawMascot(MASCOT_MAP_BLINK);
-    setTimeout(function () { drawMascot(MASCOT_MAP); }, 120);
+    drawMascot(currentFace.blink);
+    setTimeout(function () { drawMascot(currentFace.open); }, 120);
   }, 4200);
 
   var mascotWrap = document.getElementById("mascot-wrap");
@@ -901,6 +933,7 @@
       if (activeLineKey === cfg.key) {
         mascotWrap.classList.toggle("alert", state === "alert");
         mascotWrap.classList.toggle("busy", state === "busy");
+        setMascotFace(state);
       }
     };
     line.setOverall = function (critical, text) {
@@ -972,6 +1005,7 @@
     dockMsg.textContent = c.dockMessage;
     mascotWrap.classList.toggle("alert", c.mascotState === "alert");
     mascotWrap.classList.toggle("busy", c.mascotState === "busy");
+    setMascotFace(c.mascotState);
     overallPill.classList.toggle("critical", c.overallCritical);
     overallText.textContent = c.overallText;
     breadcrumbEl.innerHTML = "<b>サンプル精密工業株式会社</b> / " + c.facility + " / " + c.lineLabel;
