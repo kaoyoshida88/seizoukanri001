@@ -672,15 +672,7 @@
 
   /* ---------------- Dock message ---------------- */
   var dockMsg = document.getElementById("dock-msg");
-  var msgTimers = [];
-  function clearMsgTimers() { msgTimers.forEach(clearTimeout); msgTimers = []; }
   function say(text) { dockMsg.textContent = text; }
-  function sayQueue(lines, gap) {
-    clearMsgTimers();
-    lines.forEach(function (line, i) {
-      msgTimers.push(setTimeout(function () { say(line); }, i * gap));
-    });
-  }
 
   /* ---------------- Proposal panel ---------------- */
   var proposal = document.getElementById("proposal");
@@ -693,7 +685,7 @@
   /* ---------------- Scenario ---------------- */
   var timers = [];
   function after(ms, fn) { var id = setTimeout(fn, ms); timers.push(id); return id; }
-  function clearScenario() { timers.forEach(clearTimeout); timers = []; clearMsgTimers(); }
+  function clearScenario() { timers.forEach(clearTimeout); timers = []; }
 
   function lerp(a, b, t) { return a + (b - a) * t; }
 
@@ -730,26 +722,29 @@
     say("各製造ラインは安定稼働しております。引き続き監視中です。");
   }
 
+  var LOG_STEP = 2000; // interval between successive event-log lines, for readability
+
   function runScenario() {
     after(400, function () {
       logEvent("ok", "監視", "6カテゴリ・全監視項目 正常範囲内。");
     });
 
-    // --- ramp up anomaly ---
+    // --- ramp up anomaly: each log line lands LOG_STEP apart ---
     after(10000, function () {
       logEvent("warn", "検知", "CNC旋盤仕上げ工程で主軸電流の緩やかな上昇を検知。経過を追跡します。");
       say("CNC旋盤仕上げ工程の主軸電流にわずかな上昇傾向があります。経過を確認しています…");
       document.getElementById("station-cnc").classList.add("critical");
       document.getElementById("station-sub-cnc").textContent = "電流上昇中";
 
-      animateMetric("current", 68, 84, 0, "A", 2600);
-      animateMetric("vibe", 1.2, 2.4, 1, "mm/s", 2600);
-      animateMetric("dim", 20.020, 20.048, 3, "mm", 2600);
-      animateMetric("toollife", 46, 12, 0, "%", 2600);
-      animateMetric("okrate", 99.6, 97.1, 1, "%", 2600);
+      var rampDuration = LOG_STEP * 2;
+      animateMetric("current", 68, 84, 0, "A", rampDuration);
+      animateMetric("vibe", 1.2, 2.4, 1, "mm/s", rampDuration);
+      animateMetric("dim", 20.020, 20.048, 3, "mm", rampDuration);
+      animateMetric("toollife", 46, 12, 0, "%", rampDuration);
+      animateMetric("okrate", 99.6, 97.1, 1, "%", rampDuration);
     });
 
-    after(13200, function () {
+    after(10000 + LOG_STEP, function () {
       setCardState("equipment", true);
       setCardState("quality", true);
       setCardState("tools", true);
@@ -757,13 +752,10 @@
       document.getElementById("station-sub-cnc").textContent = "要対応";
       setMascotState("alert");
       logEvent("critical", "異常", "主軸電流 +24%／振動 +100%／寸法測定値が上限規格(20.050mm)に接近。刃具摩耗パターンの疑い。");
-      sayQueue([
-        "異常を検知しました。原因を解析しています…",
-        "刃具摩耗パターンの兆候と一致しました。対処案をまとめています…"
-      ], 1400);
+      say("異常を検知しました。刃具摩耗パターンの兆候と一致しています。対処案をまとめています…");
     });
 
-    after(16400, function () {
+    after(10000 + LOG_STEP * 2, function () {
       evCurrent.textContent = "+24%";
       evVibe.textContent = "+100%";
       proposal.classList.add("open");
@@ -780,26 +772,33 @@
     logEvent("ok", "承認", "対処案が承認されました。TECHSと連携し自動実行します。");
     say("対処案を実行しています…");
 
-    var stepDelays = [700, 1500, 2300];
-    stepDelays.forEach(function (d, i) {
-      after(d, function () {
-        proposalItems[i].classList.add("done");
-        if (i === 0) logEvent("ok", "TECHS連携", "工具交換指示を送信し、工具寿命カウンタをリセットしました。");
-        if (i === 1) logEvent("ok", "TECHS連携", "補正値（X軸 +0.02mm／Y軸 −0.01mm）を加工条件に適用しました。");
-        if (i === 2) logEvent("ok", "TECHS連携", "対象ロット #L-2291〜#L-2298 を再加工キューへ登録しました。");
-      });
+    // each remediation step lands exactly LOG_STEP apart, so the log reads at a followable pace
+    after(LOG_STEP * 1, function () {
+      proposalItems[0].classList.add("done");
+      logEvent("ok", "TECHS連携", "工具交換指示を送信し、工具寿命カウンタをリセットしました。");
     });
 
-    after(3000, function () {
+    after(LOG_STEP * 2, function () {
+      proposalItems[1].classList.add("done");
+      logEvent("ok", "TECHS連携", "補正値（X軸 +0.02mm／Y軸 −0.01mm）を加工条件に適用しました。");
+    });
+
+    after(LOG_STEP * 3, function () {
+      proposalItems[2].classList.add("done");
+      logEvent("ok", "TECHS連携", "対象ロット #L-2291〜#L-2298 を再加工キューへ登録しました。");
+    });
+
+    after(LOG_STEP * 4, function () {
+      logEvent("ok", "実行", "刃具交換・補正が完了しました。数値の復旧を確認しています。");
       say("刃具交換と補正が完了しました。数値の復旧を確認しています…");
-      animateMetric("current", 84, 68, 0, "A", 2200);
-      animateMetric("vibe", 2.4, 1.2, 1, "mm/s", 2200);
-      animateMetric("dim", 20.048, 20.020, 3, "mm", 2200);
-      animateMetric("toollife", 12, 96, 0, "%", 2200);
-      animateMetric("okrate", 97.1, 99.8, 1, "%", 2200);
+      animateMetric("current", 84, 68, 0, "A", LOG_STEP);
+      animateMetric("vibe", 2.4, 1.2, 1, "mm/s", LOG_STEP);
+      animateMetric("dim", 20.048, 20.020, 3, "mm", LOG_STEP);
+      animateMetric("toollife", 12, 96, 0, "%", LOG_STEP);
+      animateMetric("okrate", 97.1, 99.8, 1, "%", LOG_STEP);
     });
 
-    after(5300, function () {
+    after(LOG_STEP * 5, function () {
       setCardState("equipment", false);
       setCardState("quality", false);
       setCardState("tools", false);
@@ -809,7 +808,7 @@
       document.getElementById("station-sub-cnc").textContent = "";
       logEvent("ok", "復旧", "全監視項目が正常値に復旧しました。監視を継続します。");
       say("全ての監視項目が正常値に復旧しました。刃具寿命カウンタをリセットし、再加工ロットの指示を完了しています。引き続き監視を継続します。");
-      after(2600, function () {
+      after(LOG_STEP * 1.5, function () {
         proposal.classList.remove("open");
         approveBtn.disabled = false;
         holdBtn.disabled = false;
