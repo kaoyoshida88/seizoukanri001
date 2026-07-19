@@ -20,8 +20,8 @@
     --shadow: 0 1px 2px rgba(16, 21, 31, 0.06), 0 8px 24px rgba(16, 21, 31, 0.06);
 
     /* mascot's own fixed palette — a fixed character identity, not restyled per theme */
-    --mascot-gray: #9a9a9c;
-    --mascot-mark: #232325;
+    --mascot-orange: #d97757;
+    --mascot-dark: #241712;
 
     --font-display: "Yu Gothic", "Hiragino Kaku Gothic ProN", "Segoe UI", system-ui, -apple-system, "Noto Sans JP", sans-serif;
     --font-body: "Yu Gothic", "Hiragino Kaku Gothic ProN", "Segoe UI", system-ui, -apple-system, "Noto Sans JP", sans-serif;
@@ -386,10 +386,10 @@
   .btn-ghost:hover { color: var(--ink); }
 
   .dock-main { display: flex; align-items: center; gap: 14px; padding: 12px 20px; min-height: 66px; }
-  .mascot-wrap { position: relative; flex: none; width: 63px; height: 60px; }
-  #mascot { width: 63px; height: 60px; image-rendering: pixelated; display: block; }
+  .mascot-wrap { position: relative; flex: none; width: 96px; height: 48px; }
+  #mascot { width: 96px; height: 48px; image-rendering: pixelated; display: block; }
   .mascot-ring {
-    position: absolute; inset: -3px; border-radius: 13px;
+    position: absolute; inset: -4px; border-radius: 12px;
     border: 2px solid transparent; pointer-events: none;
   }
   .mascot-wrap.alert .mascot-ring { border-color: var(--critical); animation: ring-pulse 1s ease-in-out infinite; }
@@ -656,7 +656,7 @@
     </div>
     <div class="dock-main">
       <div class="mascot-wrap" id="mascot-wrap">
-        <canvas id="mascot" width="18" height="17"></canvas>
+        <canvas id="mascot" width="16" height="8"></canvas>
         <div class="mascot-ring"></div>
       </div>
       <div class="dock-text">
@@ -708,64 +708,47 @@
   tickClock();
   setInterval(tickClock, 1000);
 
-  var MASCOT_W = 18;
-  var MASCOT_H = 17;
-  // shared head/ear/shoulder shell — rows 8, 12, 13 (brow / mouth) are swapped per expression
+  var MASCOT_W = 16;
+  var MASCOT_H = 8;
+  // blocky pixel-invader shell (top block, cutout eyes, side nubs, four feet) — a nod to
+  // Claude Code's terracotta mascot. Eyes/mouth swap per expression; body stays fixed.
   var MASCOT_FACE_IDLE = [
-    "....GGG....GGG....",
-    "....GGG....GGG....",
-    "....GGG....GGG....",
-    "....GKG....GKG....",
-    "....GKG....GKG....",
-    "....GKG....GKG....",
-    "....GKG....GKG....",
-    "..GGGGGGGGGGGGGG..",
-    "..GGGGGGGGGGGGGG..",
-    "..GGGGKKGGKKGGGG..",
-    "..GGGGGGGGGGGGGG..",
-    "..GGGGGGGGGGGGGG..",
-    "..GGGGGKGGKGGGGG..",
-    "..GGGGGGKKGGGGGG..",
-    "...GGGGGGGGGGGG...",
-    ".GGGGGGGGGGGGGGGG.",
-    "GGGGGGGGGGGGGGGGGG"
+    "...OOOOOOOOOO...",
+    "...OOKKOOKKOO...",
+    "...OOKKOOKKOO...",
+    "...OOOOOOOOOO...",
+    ".OOOOOOOOOOOOOO.",
+    "...OOOOOOOOOO...",
+    "...OOOOOOOOOO...",
+    "...O..O..O..O..."
   ];
   var MASCOT_FACE_ALERT = [
-    "....GGG....GGG....",
-    "....GGG....GGG....",
-    "....GGG....GGG....",
-    "....GKG....GKG....",
-    "....GKG....GKG....",
-    "....GKG....GKG....",
-    "....GKG....GKG....",
-    "..GGGGGGGGGGGGGG..",
-    "..GGGGKKGGKKGGGG..",
-    "..GGGGKKGGKKGGGG..",
-    "..GGGGGGGGGGGGGG..",
-    "..GGGGGGGGGGGGGG..",
-    "..GGGGGGGGGGGGGG..",
-    "..GGGGGKKKKGGGGG..",
-    "...GGGGGGGGGGGG...",
-    ".GGGGGGGGGGGGGGGG.",
-    "GGGGGGGGGGGGGGGGGG"
+    "...OOKOOOOKOO...",
+    "...OOOOOOOOOO...",
+    "...OOKKOOKKOO...",
+    "...OOOKKKKOOO...",
+    ".OOOOOOOOOOOOOO.",
+    "...OOOOOOOOOO...",
+    "...OOOOOOOOOO...",
+    "...O..O..O..O..."
   ];
-  function blinkOf(map) {
+  function blinkOf(map, eyeRows) {
     return map.map(function (row, i) {
-      return (i === 9) ? row.replace(/K/g, "G") : row;
+      return (eyeRows.indexOf(i) !== -1) ? row.replace(/K/g, "O") : row;
     });
   }
   var MASCOT_FACES = {
-    idle: { open: MASCOT_FACE_IDLE, blink: blinkOf(MASCOT_FACE_IDLE) },
-    alert: { open: MASCOT_FACE_ALERT, blink: blinkOf(MASCOT_FACE_ALERT) },
-    busy: { open: MASCOT_FACE_ALERT, blink: blinkOf(MASCOT_FACE_ALERT) }
+    idle: { open: MASCOT_FACE_IDLE, blink: blinkOf(MASCOT_FACE_IDLE, [1, 2]) },
+    alert: { open: MASCOT_FACE_ALERT, blink: blinkOf(MASCOT_FACE_ALERT, [2]) },
+    busy: { open: MASCOT_FACE_ALERT, blink: blinkOf(MASCOT_FACE_ALERT, [2]) }
   };
   var mascotCanvas = document.getElementById("mascot");
   var mctx = mascotCanvas.getContext("2d");
   function mascotColors() {
     var cs = getComputedStyle(document.documentElement);
     return {
-      G: cs.getPropertyValue("--mascot-gray").trim(),
-      K: cs.getPropertyValue("--mascot-mark").trim()
+      O: cs.getPropertyValue("--mascot-orange").trim(),
+      K: cs.getPropertyValue("--mascot-dark").trim()
     };
   }
   function drawMascot(map) {
