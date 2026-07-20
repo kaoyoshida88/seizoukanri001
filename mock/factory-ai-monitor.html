@@ -272,6 +272,11 @@
     .cam-live-dot { animation: none; }
   }
 
+  /* 3rd camera panel docked beside the AI agent, bottom-right of the screen */
+  .dock-cam-panel { flex: none; width: 240px; }
+  .dock-cam-panel .cam-frame { flex: none; aspect-ratio: 16 / 9; }
+  .dock-cam-panel[hidden] { display: none; }
+
   /* ---------- Line screen (per-line monitor strip + stage) ---------- */
   .line-screen { display: grid; grid-template-rows: auto 1fr; min-height: 0; }
   .line-screen[hidden] { display: none; }
@@ -865,19 +870,31 @@
       stripEl.appendChild(card);
     });
 
+    function buildCamPanel(vp) {
+      var vcard = document.createElement("div");
+      vcard.className = "panel cam-panel";
+      vcard.innerHTML =
+        '<div class="panel-head"><h2>' + vp.title + '</h2>' +
+        '<span class="cam-live"><span class="cam-live-dot"></span>LIVE</span></div>' +
+        '<div class="cam-frame">' +
+        '<video src="' + vp.src + '" autoplay muted loop playsinline></video>' +
+        '<div class="cam-tag">' + vp.tag + "</div></div>";
+      return vcard;
+    }
+
     var camStackEl = root.querySelector(".cam-stack");
     if (cfg.videoPanels && camStackEl) {
       cfg.videoPanels.forEach(function (vp) {
-        var vcard = document.createElement("div");
-        vcard.className = "panel cam-panel";
-        vcard.innerHTML =
-          '<div class="panel-head"><h2>' + vp.title + '</h2>' +
-          '<span class="cam-live"><span class="cam-live-dot"></span>LIVE</span></div>' +
-          '<div class="cam-frame">' +
-          '<video src="' + vp.src + '" autoplay muted loop playsinline></video>' +
-          '<div class="cam-tag">' + vp.tag + "</div></div>";
-        camStackEl.appendChild(vcard);
+        camStackEl.appendChild(buildCamPanel(vp));
       });
+    }
+
+    var dockVideoCardEl = null;
+    if (cfg.dockVideoPanel) {
+      dockVideoCardEl = buildCamPanel(cfg.dockVideoPanel);
+      dockVideoCardEl.classList.add("dock-cam-panel");
+      dockVideoCardEl.hidden = true;
+      document.querySelector(".dock-main").appendChild(dockVideoCardEl);
     }
 
     cfg.stations.forEach(function (s) {
@@ -958,6 +975,7 @@
       facility: cfg.facility,
       lineLabel: cfg.lineLabel,
       started: false,
+      dockVideoCardEl: dockVideoCardEl,
       dockMessage: "",
       mascotState: "idle",
       overallCritical: false,
@@ -1063,6 +1081,10 @@
     overallText.textContent = c.overallText;
     breadcrumbEl.innerHTML = "<b>サンプル精密工業株式会社</b> / " + c.facility + " / " + c.lineLabel;
     dockNameText.textContent = "AIエージェント ― " + c.facility + c.lineLabel + "を監視中";
+    Object.keys(lineControllers).forEach(function (k) {
+      var vc = lineControllers[k].dockVideoCardEl;
+      if (vc) vc.hidden = k !== key;
+    });
     if (!c.started) {
       c.started = true;
       c.resetDashboard();
@@ -1110,9 +1132,9 @@
     ],
     videoPanels: [
       { title: "粗加工工程", tag: "CAM-01", src: "%E9%87%91%E5%B1%9E%E9%83%A8%E5%93%81%E3%81%AE%E7%B2%97%E5%8A%A0%E5%B7%A5%E5%B7%A5%E7%A8%8B_202607201227.mp4" },
-      { title: "CNC旋盤仕上げ工程", tag: "CAM-03", src: "CNC_Senban_Loop.mp4" },
-      { title: "検査工程", tag: "CAM-05", src: "Metal_part_precision_inspection_202607201314.mp4" }
+      { title: "CNC旋盤仕上げ工程", tag: "CAM-03", src: "CNC_Senban_Loop.mp4" }
     ],
+    dockVideoPanel: { title: "検査工程", tag: "CAM-05", src: "Metal_part_precision_inspection_202607201314.mp4" },
     stations: [
       { id: "in", label: "投入" },
       { id: "rough", label: "粗加工" },
