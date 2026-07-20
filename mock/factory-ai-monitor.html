@@ -608,7 +608,7 @@
       <div class="panel">
         <div class="panel-head">
           <h2>生産ライン模式図</h2>
-          <span class="sub">加工ライン2 ― 投入から完成検査まで（仕上げ加工は3台並列）</span>
+          <span class="sub">加工ライン2 ― 投入から完成検査まで</span>
         </div>
         <div class="line-body">
           <div class="rail"></div>
@@ -671,12 +671,12 @@
       <div class="proposal-inner">
         <div class="proposal-stripe"></div>
         <div class="proposal-body">
-          <p class="proposal-title">対処案 ― クーラント供給異常（フィルタ目詰まり・ポンプ劣化の疑い）を検出</p>
-          <p class="proposal-evidence">2号機 クーラント流量 <span class="v" data-ev="flow">0%</span> ／ フィルタ差圧 <span class="v" data-ev="filterDp">+0%</span> ／ 表面粗さが上限規格(Ra1.6)に接近</p>
+          <p class="proposal-title">対処案 ― 組立ロボットのグリップ圧力異常（エア配管の目詰まり・コンプレッサー劣化の疑い）を検出</p>
+          <p class="proposal-evidence">組立ロボット グリップ圧力 <span class="v" data-ev="pressure">0%</span> ／ 部品供給遅延 <span class="v" data-ev="filterDp">+0%</span> ／ 組付け位置ずれが上限規格に接近</p>
           <ol class="proposal-list">
-            <li><span class="step-badge">1</span><span>2号機を一時停止し、TECHS上で「利用停止」に設定。点検完了まで生産対象から除外</span></li>
-            <li><span class="step-badge">2</span><span>2号機の生産予定数量を1号機・3号機へ振り替え、TECHSの生産計画・工程負荷を更新</span></li>
-            <li><span class="step-badge">3</span><span>振替先（1号機・3号機）の加工条件（送り速度）を一時緩和し、品質への影響を抑制しながら増産対応</span></li>
+            <li><span class="step-badge">1</span><span>組立ロボットを一時停止し、TECHS上で「利用停止」に設定。バックアップエアコンプレッサーへ自動切替</span></li>
+            <li><span class="step-badge">2</span><span>主エア配管のフィルタ清掃・コンプレッサー点検を保守チームへ自動発行し、完了まで投入ピッチを一時緩和して品質影響を抑制</span></li>
+            <li><span class="step-badge">3</span><span>点検完了後の復旧判定条件（グリップ圧力・位置ずれ計測値のしきい値）をTECHSに登録し、正常値復帰を確認後に自動で通常運転へ復帰</span></li>
           </ol>
           <div class="proposal-actions">
             <button class="btn btn-primary" type="button" data-action="approve">承認して実行</button>
@@ -1347,7 +1347,7 @@
   };
 
   /* =================================================================
-     LINE 2 ― 第1工場 加工ライン2 ― クーラント供給異常パターン
+     LINE 2 ― 第1工場 加工ライン2 ― 組立ロボット グリップ圧力異常パターン
      ================================================================= */
   var line2 = createLine({
     key: "line2",
@@ -1355,28 +1355,28 @@
     lineLabel: "加工ライン2",
     startupLogMsg: "TP LineGuard AI を起動しました。加工ライン2の監視を開始します。",
     idleMessage: "第1工場 加工ライン2も安定稼働しております。引き続き監視中です。",
-    holdLogMsg: "対応を保留しました。クーラント供給の異常が継続するため、加工点温度上昇のリスクが残ります。",
+    holdLogMsg: "対応を保留しました。グリップ圧力の異常が継続するため、組付け不良発生のリスクが残ります。",
     holdSayMsg: "対応を保留しました。品質への影響が懸念されるため、早めのご判断をお願いします。",
     categories: [
-      { id: "coolant", title: "クーラント供給", metrics: [
-        { id: "flow", label: "クーラント流量", unit: "L/min", base: 42, dp: 0 },
-        { id: "pressure", label: "供給圧力", unit: "MPa", base: 0.35, dp: 2 },
-        { id: "temp", label: "液温", unit: "℃", base: 24, dp: 0 },
-        { id: "level", label: "液位", unit: "%", base: 82, dp: 0 }
+      { id: "coolant", title: "グリッパー空圧", metrics: [
+        { id: "flow", label: "エア消費量", unit: "L/min", base: 42, dp: 0 },
+        { id: "pressure", label: "グリップ圧力", unit: "MPa", base: 0.35, dp: 2 },
+        { id: "temp", label: "アクチュエータ温度", unit: "℃", base: 24, dp: 0 },
+        { id: "level", label: "エアタンク残量", unit: "%", base: 82, dp: 0 }
       ] },
-      { id: "pump", title: "ポンプ状態", metrics: [
-        { id: "pumpCurrent", label: "ポンプ電流", unit: "A", base: 3.2, dp: 1 },
+      { id: "pump", title: "モータ状態", metrics: [
+        { id: "pumpCurrent", label: "モータ電流", unit: "A", base: 3.2, dp: 1 },
         { id: "pumpHours", label: "累積稼働時間", unit: "h", base: 8200, dp: 0 },
         { id: "pumpHealth", label: "劣化診断", text: "良好" }
       ] },
-      { id: "filter", title: "フィルタ/切りくず", metrics: [
-        { id: "filterDp", label: "フィルタ差圧", unit: "kPa", base: 12, dp: 0 },
-        { id: "chipDischarge", label: "切りくず排出状況", text: "正常" },
-        { id: "chipVolume", label: "切りくず量", unit: "kg", base: 18, dp: 0 }
+      { id: "filter", title: "部品供給/搬送", metrics: [
+        { id: "filterDp", label: "部品供給遅延", unit: "ms", base: 12, dp: 0 },
+        { id: "chipDischarge", label: "搬送状況", text: "正常" },
+        { id: "chipVolume", label: "未組立部品滞留数", unit: "個", base: 18, dp: 0 }
       ] },
       { id: "quality", title: "品質情報", metrics: [
-        { id: "roughness", label: "表面粗さ", unit: "μmRa", base: 0.8, dp: 2 },
-        { id: "dim", label: "寸法測定値", unit: "mm", base: 15.010, dp: 3 },
+        { id: "roughness", label: "組付け位置ずれ", unit: "mm", base: 0.8, dp: 2 },
+        { id: "dim", label: "ねじ締めトルク", unit: "N・m", base: 15.010, dp: 3 },
         { id: "okrate", label: "外観検査OK率", unit: "%", base: 99.4, dp: 1 }
       ] },
       { id: "process", title: "工程進捗", metrics: [
@@ -1386,19 +1386,15 @@
       ] },
       { id: "maintenance", title: "稼働/保全", metrics: [
         { id: "opRate", label: "可動率", unit: "%", base: 100, dp: 0 },
-        { id: "opStatus", label: "2号機 稼働状態", text: "稼働中" },
+        { id: "opStatus", label: "組立ロボット 稼働状態", text: "稼働中" },
         { id: "nextCheck", label: "次回定期点検予定", text: "08/05" }
       ] }
     ],
     stations: [
       { id: "in", label: "投入" },
-      { id: "rough", label: "荒加工" },
-      { id: "finish", label: "仕上げ加工", icon: "cnc", group: [
-        { id: "m1", label: "1号機" },
-        { id: "m2", label: "2号機" },
-        { id: "m3", label: "3号機" }
-      ] },
-      { id: "inspect", label: "検査" },
+      { id: "rough", label: "射出成形", video: { tag: "CAM-07", src: "Robot_arm_extracting_car_part_202607201718.mp4" } },
+      { id: "finish", label: "組立", video: { tag: "CAM-08", src: "Robot_arm_assembling_transmissio%E2%80%A6_202607201717.mp4" } },
+      { id: "inspect", label: "外観検査", video: { tag: "CAM-09", src: "Robot_arm_inspecting_metal_part_202607201717.mp4" } },
       { id: "done", label: "完成" }
     ]
   });
@@ -1411,10 +1407,10 @@
     });
 
     c.after(10000, function () {
-      c.logEvent("warn", "検知", "2号機のクーラント流量が緩やかに低下。加工点温度の上昇を確認しています。");
-      c.say("2号機のクーラント流量に低下傾向があります。フィルタ差圧を確認しています…");
-      c.setStationCritical("m2", true);
-      c.setStationSub("m2", "流量低下中");
+      c.logEvent("warn", "検知", "組立ロボットのグリップ圧力が緩やかに低下。エア配管の目詰まりの可能性を確認しています。");
+      c.say("組立ロボットのグリップ圧力に低下傾向があります。エア配管の状態を確認しています…");
+      c.setStationCritical("finish", true);
+      c.setStationSub("finish", "圧力低下中");
 
       var rampDuration = LOG_STEP * 2;
       c.animateMetric("flow", 42, 24, 0, "L/min", rampDuration);
@@ -1422,10 +1418,10 @@
       c.animateMetric("temp", 24, 38, 0, "℃", rampDuration);
       c.animateMetric("level", 82, 61, 0, "%", rampDuration);
       c.animateMetric("pumpCurrent", 3.2, 4.6, 1, "A", rampDuration);
-      c.animateMetric("filterDp", 12, 34, 0, "kPa", rampDuration);
-      c.animateMetric("chipVolume", 18, 26, 0, "kg", rampDuration);
-      c.animateMetric("roughness", 0.8, 2.1, 2, "μmRa", rampDuration);
-      c.animateMetric("dim", 15.010, 15.034, 3, "mm", rampDuration);
+      c.animateMetric("filterDp", 12, 34, 0, "ms", rampDuration);
+      c.animateMetric("chipVolume", 18, 26, 0, "個", rampDuration);
+      c.animateMetric("roughness", 0.8, 2.1, 2, "mm", rampDuration);
+      c.animateMetric("dim", 15.010, 15.034, 3, "N・m", rampDuration);
       c.animateMetric("okrate", 99.4, 95.2, 1, "%", rampDuration);
     });
 
@@ -1435,16 +1431,16 @@
       c.setCardState("filter", true);
       c.setCardState("quality", true);
       c.setOverall(true, "1件の異常を検知");
-      c.setStationSub("m2", "要対応");
+      c.setStationSub("finish", "要対応");
       c.setMascot("alert");
       c.setMetric("pumpHealth", "要点検", true);
-      c.setMetric("chipDischarge", "排出不良", true);
-      c.logEvent("critical", "異常", "2号機: クーラント流量-43%、フィルタ差圧+183%、表面粗さがRa1.6上限に接近。フィルタ目詰まり・ポンプ劣化の疑い。");
-      c.say("フィルタ目詰まりまたはポンプ劣化の兆候と一致しています。対処案をまとめています…");
+      c.setMetric("chipDischarge", "搬送遅延", true);
+      c.logEvent("critical", "異常", "組立ロボット: グリップ圧力-49%、部品供給遅延+183%、組付け位置ずれが上限規格に接近。エア配管の詰まり・コンプレッサー劣化の疑い。");
+      c.say("エア配管の詰まりまたはコンプレッサー劣化の兆候と一致しています。対処案をまとめています…");
     });
 
     c.after(10000 + LOG_STEP * 2, function () {
-      c.setEv("flow", "-43%");
+      c.setEv("pressure", "-49%");
       c.setEv("filterDp", "+183%");
       c.proposalEl.classList.add("open");
       c.logEvent("critical", "AI提案", "対処案を提示しました。承認待ちです。");
@@ -1463,33 +1459,32 @@
 
     c.after(LOG_STEP * 1, function () {
       c.proposalItems[0].classList.add("done");
-      c.setStationCritical("m2", false);
-      c.setStationStopped("m2", true);
-      c.setStationSub("m2", "点検待ち");
+      c.setStationCritical("finish", false);
+      c.setStationStopped("finish", true);
+      c.setStationSub("finish", "点検待ち");
       c.setMetric("opStatus", "停止中(点検待ち)", true);
       c.animateMetric("opRate", 100, 67, 0, "%", LOG_STEP);
-      c.logEvent("ok", "TECHS連携", "2号機をTECHS上で利用停止に設定しました。点検完了まで生産対象から除外します。");
+      c.logEvent("ok", "TECHS連携", "組立ロボットをTECHS上で利用停止に設定し、バックアップエアコンプレッサーへ切替えました。");
     });
     c.after(LOG_STEP * 2, function () {
       c.proposalItems[1].classList.add("done");
-      c.setMetric("loadShift", "2号機→1号機/3号機へ振替中");
-      c.logEvent("ok", "TECHS連携", "2号機の生産予定数量を1号機・3号機へ振り替え、TECHSの生産計画を更新しました。");
+      c.setMetric("loadShift", "投入ピッチを一時緩和中");
+      c.logEvent("ok", "TECHS連携", "主エア配管のフィルタ清掃・コンプレッサー点検を保守チームへ発行し、投入ピッチを一時緩和しました。");
     });
     c.after(LOG_STEP * 3, function () {
       c.proposalItems[2].classList.add("done");
-      c.setStationSub("m1", "増産対応");
-      c.setStationSub("m3", "増産対応");
-      c.logEvent("ok", "TECHS連携", "振替先(1号機・3号機)の加工条件を一時緩和し、品質影響を抑制する設定を適用しました。");
+      c.setStationSub("finish", "点検待ち(復旧条件登録済)");
+      c.logEvent("ok", "TECHS連携", "点検完了後の復旧判定条件（グリップ圧力・位置ずれのしきい値）をTECHSに登録しました。");
     });
     c.after(LOG_STEP * 4, function () {
-      c.logEvent("ok", "実行", "振替後の生産状況を確認しています。");
-      c.say("生産の振替が完了しました。1号機・3号機の状況を確認しています…");
+      c.logEvent("ok", "実行", "点検・復旧の状況を確認しています。");
+      c.say("エア配管の点検が完了しました。復旧条件を確認しています…");
       c.setMetric("flow", "0 L/min(停止中)");
       c.setMetric("pressure", "0.00 MPa(停止中)");
       c.setMetric("temp", "24 ℃(停止中)");
       c.setMetric("pumpCurrent", "0.0 A(停止中)");
-      c.animateMetric("roughness", 2.1, 0.8, 2, "μmRa", LOG_STEP);
-      c.animateMetric("dim", 15.034, 15.010, 3, "mm", LOG_STEP);
+      c.animateMetric("roughness", 2.1, 0.8, 2, "mm", LOG_STEP);
+      c.animateMetric("dim", 15.034, 15.010, 3, "N・m", LOG_STEP);
       c.animateMetric("okrate", 95.2, 99.6, 1, "%", LOG_STEP);
     });
     c.after(LOG_STEP * 5, function () {
@@ -1499,8 +1494,8 @@
       c.setCardState("quality", false);
       c.setOverall(false, "全項目 正常稼働中");
       c.setMascot("idle");
-      c.logEvent("ok", "復旧", "2号機は点検待ちで停止中ですが、1号機・3号機への振替により生産計画への影響はありません。監視を継続します。");
-      c.say("2号機は点検待ちのため停止していますが、1号機・3号機への振替生産により生産計画への影響はありません。品質状況も正常範囲に復旧しました。引き続き監視を継続します。");
+      c.logEvent("ok", "復旧", "組立ロボットは点検待ちで停止中ですが、投入ピッチの調整により生産計画への影響は最小限です。監視を継続します。");
+      c.say("組立ロボットは点検待ちのため停止していますが、投入ピッチの調整により生産計画への影響は最小限に抑えられています。品質状況も正常範囲に復旧しました。引き続き監視を継続します。");
       c.after(LOG_STEP * 1.5, function () {
         c.proposalEl.classList.remove("open");
         c.approveBtn.disabled = false;
