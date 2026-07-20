@@ -241,26 +241,11 @@
   .mrow .v { font-family: var(--font-mono); font-variant-numeric: tabular-nums; color: var(--ink); font-weight: 600; }
   .mcard.critical .mrow .v.flag { color: var(--critical); }
 
-  /* ---------- CNC camera panels (looping video), stacked on the right of the stage ---------- */
-  .cam-stack { display: flex; flex-direction: column; gap: 14px; min-height: 0; }
-  .cam-panel { flex: 1; min-height: 0; }
-  .cam-panel .panel-head { padding: 9px 12px 8px; gap: 6px; }
-  .cam-panel .panel-head h2 { font-size: 12px; }
-  .cam-live { margin-left: auto; display: flex; align-items: center; gap: 3px; font-size: 8.5px; font-weight: 800; letter-spacing: 0.03em; color: var(--critical); flex: none; }
-  .cam-live-dot { width: 5px; height: 5px; border-radius: 50%; background: var(--critical); animation: cam-blink 1.2s infinite; }
-  .cam-frame {
-    position: relative;
-    flex: 1;
-    min-height: 0;
-    overflow: hidden;
-    background: #0d1520;
-    border-radius: 0 0 10px 10px;
-  }
-  .cam-frame video {
-    position: absolute; inset: 0;
-    width: 100%; height: 100%;
-    object-fit: cover;
-    display: block;
+  /* ---------- CNC camera video inside a schematic station node ---------- */
+  .cam-live-dot {
+    position: absolute; top: 5px; right: 6px;
+    width: 5px; height: 5px; border-radius: 50%;
+    background: var(--critical); animation: cam-blink 1.2s infinite;
   }
   .cam-tag {
     position: absolute; left: 6px; bottom: 5px;
@@ -271,11 +256,6 @@
   @media (prefers-reduced-motion: reduce) {
     .cam-live-dot { animation: none; }
   }
-
-  /* 3rd camera panel docked beside the AI agent, bottom-right of the screen */
-  .dock-cam-panel { flex: none; width: 240px; }
-  .dock-cam-panel .cam-frame { flex: none; aspect-ratio: 16 / 9; }
-  .dock-cam-panel[hidden] { display: none; }
 
   /* ---------- Line screen (per-line monitor strip + stage) ---------- */
   .line-screen { display: grid; grid-template-rows: auto 1fr; min-height: 0; }
@@ -289,11 +269,6 @@
     padding: 16px 20px;
     overflow: hidden;
     min-height: 0;
-  }
-  /* line3 adds a 3rd, narrower column of stacked camera panels on the right,
-     narrowing the schematic/log panels to make room */
-  [data-line-screen="line3"] .stage {
-    grid-template-columns: 1.15fr 0.85fr 240px;
   }
   .panel {
     background: var(--surface);
@@ -320,8 +295,8 @@
     animation: flow 3.4s linear infinite;
   }
   @keyframes flow { from { left: 60px; } to { left: calc(100% - 66px); } }
-  .stations { position: relative; display: flex; justify-content: space-between; width: 100%; z-index: 1; }
-  .station { display: flex; flex-direction: column; align-items: center; gap: 8px; width: 108px; }
+  .stations { position: relative; display: flex; justify-content: space-between; align-items: center; width: 100%; z-index: 1; gap: 10px; }
+  .station { display: flex; flex-direction: column; align-items: center; gap: 8px; width: 108px; flex: none; }
   .node {
     width: 56px; height: 56px; border-radius: 10px;
     background: var(--surface-2); border: 1.5px solid var(--border);
@@ -329,6 +304,19 @@
     transition: border-color .3s, box-shadow .3s, background .3s;
   }
   .node svg { width: 26px; height: 26px; }
+  .station.has-video { width: 168px; }
+  .node.has-video {
+    position: relative;
+    width: 168px; height: 100px;
+    overflow: hidden;
+    padding: 0;
+  }
+  .node.has-video video {
+    position: absolute; inset: 0;
+    width: 100%; height: 100%;
+    object-fit: cover;
+    display: block;
+  }
   .station.critical .node {
     border-color: var(--critical); color: var(--critical); background: var(--critical-soft);
     box-shadow: 0 0 0 5px color-mix(in srgb, var(--critical) 16%, transparent);
@@ -581,7 +569,6 @@
         </div>
         <div class="log-body"></div>
       </div>
-      <div class="cam-stack"></div>
     </section>
   </div>
 
@@ -870,33 +857,6 @@
       stripEl.appendChild(card);
     });
 
-    function buildCamPanel(vp) {
-      var vcard = document.createElement("div");
-      vcard.className = "panel cam-panel";
-      vcard.innerHTML =
-        '<div class="panel-head"><h2>' + vp.title + '</h2>' +
-        '<span class="cam-live"><span class="cam-live-dot"></span>LIVE</span></div>' +
-        '<div class="cam-frame">' +
-        '<video src="' + vp.src + '" autoplay muted loop playsinline></video>' +
-        '<div class="cam-tag">' + vp.tag + "</div></div>";
-      return vcard;
-    }
-
-    var camStackEl = root.querySelector(".cam-stack");
-    if (cfg.videoPanels && camStackEl) {
-      cfg.videoPanels.forEach(function (vp) {
-        camStackEl.appendChild(buildCamPanel(vp));
-      });
-    }
-
-    var dockVideoCardEl = null;
-    if (cfg.dockVideoPanel) {
-      dockVideoCardEl = buildCamPanel(cfg.dockVideoPanel);
-      dockVideoCardEl.classList.add("dock-cam-panel");
-      dockVideoCardEl.hidden = true;
-      document.querySelector(".dock-main").appendChild(dockVideoCardEl);
-    }
-
     cfg.stations.forEach(function (s) {
       var el = document.createElement("div");
       if (s.group) {
@@ -910,10 +870,15 @@
         }).join("");
         el.innerHTML = '<div class="station-group-label">' + s.label + '</div><div class="machine-row">' + machinesHtml + "</div>";
       } else {
-        el.className = "station";
+        el.className = "station" + (s.video ? " has-video" : "");
         el.dataset.station = s.id;
+        var nodeInner = s.video
+          ? '<video src="' + s.video.src + '" autoplay muted loop playsinline></video>' +
+            '<span class="cam-live-dot"></span>' +
+            '<span class="cam-tag">' + s.video.tag + "</span>"
+          : '<svg viewBox="0 0 24 24">' + STATION_ICON[s.id] + "</svg>";
         el.innerHTML =
-          '<div class="node"><svg viewBox="0 0 24 24">' + STATION_ICON[s.id] + "</svg></div>" +
+          '<div class="node' + (s.video ? " has-video" : "") + '">' + nodeInner + "</div>" +
           '<div class="station-label">' + s.label + '</div>' +
           '<div class="station-sub" data-station-sub="' + s.id + '"></div>';
       }
@@ -975,7 +940,6 @@
       facility: cfg.facility,
       lineLabel: cfg.lineLabel,
       started: false,
-      dockVideoCardEl: dockVideoCardEl,
       dockMessage: "",
       mascotState: "idle",
       overallCritical: false,
@@ -1081,10 +1045,6 @@
     overallText.textContent = c.overallText;
     breadcrumbEl.innerHTML = "<b>サンプル精密工業株式会社</b> / " + c.facility + " / " + c.lineLabel;
     dockNameText.textContent = "AIエージェント ― " + c.facility + c.lineLabel + "を監視中";
-    Object.keys(lineControllers).forEach(function (k) {
-      var vc = lineControllers[k].dockVideoCardEl;
-      if (vc) vc.hidden = k !== key;
-    });
     if (!c.started) {
       c.started = true;
       c.resetDashboard();
@@ -1130,16 +1090,11 @@
         { id: "air", label: "エア圧", unit: "MPa", base: 0.52, dp: 2 }
       ] }
     ],
-    videoPanels: [
-      { title: "粗加工工程", tag: "CAM-01", src: "%E9%87%91%E5%B1%9E%E9%83%A8%E5%93%81%E3%81%AE%E7%B2%97%E5%8A%A0%E5%B7%A5%E5%B7%A5%E7%A8%8B_202607201227.mp4" },
-      { title: "CNC旋盤仕上げ工程", tag: "CAM-03", src: "CNC_Senban_Loop.mp4" }
-    ],
-    dockVideoPanel: { title: "検査工程", tag: "CAM-05", src: "Metal_part_precision_inspection_202607201314.mp4" },
     stations: [
       { id: "in", label: "投入" },
-      { id: "rough", label: "粗加工" },
-      { id: "cnc", label: "CNC旋盤仕上げ" },
-      { id: "inspect", label: "検査" },
+      { id: "rough", label: "粗加工", video: { tag: "CAM-01", src: "%E9%87%91%E5%B1%9E%E9%83%A8%E5%93%81%E3%81%AE%E7%B2%97%E5%8A%A0%E5%B7%A5%E5%B7%A5%E7%A8%8B_202607201227.mp4" } },
+      { id: "cnc", label: "CNC旋盤仕上げ", video: { tag: "CAM-03", src: "CNC_Senban_Loop.mp4" } },
+      { id: "inspect", label: "検査", video: { tag: "CAM-05", src: "Metal_part_precision_inspection_202607201314.mp4" } },
       { id: "done", label: "完成" }
     ]
   });
