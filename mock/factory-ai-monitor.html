@@ -241,20 +241,14 @@
   .mrow .v { font-family: var(--font-mono); font-variant-numeric: tabular-nums; color: var(--ink); font-weight: 600; }
   .mcard.critical .mrow .v.flag { color: var(--critical); }
 
-  /* ---------- Monitor strip: line3 gets a 7th (camera) panel, so tighten spacing ---------- */
-  [data-line-screen="line3"] .monitor-strip {
-    grid-template-columns: repeat(7, minmax(120px, 1fr));
-    gap: 6px;
-    padding: 12px 14px;
-    align-items: start;
-  }
-  [data-line-screen="line3"] .mcard {
+  /* ---------- CNC camera panel (looping video), docked beside the AI agent ---------- */
+  .dock-main .cam-card {
+    flex: none;
+    width: 204px;
     padding: 8px 9px 9px;
-    min-width: 120px;
+    min-width: 0;
   }
-  [data-line-screen="line3"] .mcard-head { margin-bottom: 5px; }
-
-  /* ---------- CNC camera panel (looping video) ---------- */
+  .dock-main .cam-card .mcard-head { margin-bottom: 5px; }
   .cam-live { margin-left: auto; display: flex; align-items: center; gap: 3px; font-size: 8.5px; font-weight: 800; letter-spacing: 0.03em; color: var(--critical); }
   .cam-live-dot { width: 5px; height: 5px; border-radius: 50%; background: var(--critical); animation: cam-blink 1.2s infinite; }
   .cam-frame {
@@ -868,22 +862,24 @@
         '<div class="mcard-head"><svg class="mcard-icon" viewBox="0 0 24 24">' + ICONS[cat.id] + "</svg>" +
         '<span class="mcard-title">' + cat.title + '</span><span class="mcard-status"></span></div>' + rows;
       stripEl.appendChild(card);
-
-      if (cfg.videoPanel && cfg.videoPanel.afterId === cat.id) {
-        var vp = cfg.videoPanel;
-        var vcard = document.createElement("div");
-        vcard.className = "mcard cam-card";
-        vcard.dataset.card = "cncvideo";
-        vcard.innerHTML =
-          '<div class="mcard-head"><svg class="mcard-icon" viewBox="0 0 24 24">' + ICONS.cncvideo + "</svg>" +
-          '<span class="mcard-title">' + vp.title + '</span>' +
-          '<span class="cam-live"><span class="cam-live-dot"></span>LIVE</span></div>' +
-          '<div class="cam-frame">' +
-          '<video src="' + vp.src + '" autoplay muted loop playsinline></video>' +
-          '<div class="cam-tag">' + vp.tag + "</div></div>";
-        stripEl.appendChild(vcard);
-      }
     });
+
+    var videoCardEl = null;
+    if (cfg.videoPanel) {
+      var vp = cfg.videoPanel;
+      videoCardEl = document.createElement("div");
+      videoCardEl.className = "mcard cam-card";
+      videoCardEl.dataset.card = "cncvideo";
+      videoCardEl.hidden = true;
+      videoCardEl.innerHTML =
+        '<div class="mcard-head"><svg class="mcard-icon" viewBox="0 0 24 24">' + ICONS.cncvideo + "</svg>" +
+        '<span class="mcard-title">' + vp.title + '</span>' +
+        '<span class="cam-live"><span class="cam-live-dot"></span>LIVE</span></div>' +
+        '<div class="cam-frame">' +
+        '<video src="' + vp.src + '" autoplay muted loop playsinline></video>' +
+        '<div class="cam-tag">' + vp.tag + "</div></div>";
+      document.querySelector(".dock-main").appendChild(videoCardEl);
+    }
 
     cfg.stations.forEach(function (s) {
       var el = document.createElement("div");
@@ -963,6 +959,7 @@
       facility: cfg.facility,
       lineLabel: cfg.lineLabel,
       started: false,
+      videoCardEl: videoCardEl,
       dockMessage: "",
       mascotState: "idle",
       overallCritical: false,
@@ -1068,6 +1065,10 @@
     overallText.textContent = c.overallText;
     breadcrumbEl.innerHTML = "<b>サンプル精密工業株式会社</b> / " + c.facility + " / " + c.lineLabel;
     dockNameText.textContent = "AIエージェント ― " + c.facility + c.lineLabel + "を監視中";
+    Object.keys(lineControllers).forEach(function (k) {
+      var vc = lineControllers[k].videoCardEl;
+      if (vc) vc.hidden = k !== key;
+    });
     if (!c.started) {
       c.started = true;
       c.resetDashboard();
