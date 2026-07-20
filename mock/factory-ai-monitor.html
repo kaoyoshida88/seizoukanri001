@@ -254,58 +254,32 @@
   }
   [data-line-screen="line3"] .mcard-head { margin-bottom: 5px; }
 
-  /* ---------- CNC camera panel (CSS-simulated "live" loop, no real video asset) ---------- */
+  /* ---------- CNC camera panel (looping video) ---------- */
   .cam-live { margin-left: auto; display: flex; align-items: center; gap: 3px; font-size: 8.5px; font-weight: 800; letter-spacing: 0.03em; color: var(--critical); }
   .cam-live-dot { width: 5px; height: 5px; border-radius: 50%; background: var(--critical); animation: cam-blink 1.2s infinite; }
   .cam-frame {
     position: relative;
     width: 100%;
-    aspect-ratio: 16 / 10;
+    aspect-ratio: 16 / 9;
     border-radius: 5px;
     overflow: hidden;
     background: #0d1520;
     border: 1px solid color-mix(in srgb, var(--border) 70%, #000 10%);
   }
-  .cam-scene { position: absolute; inset: 0; }
-  .cam-bg {
+  .cam-frame video {
     position: absolute; inset: 0;
-    background:
-      radial-gradient(120% 90% at 50% 0%, rgba(255,255,255,0.10), rgba(255,255,255,0) 55%),
-      repeating-linear-gradient(90deg, rgba(255,255,255,0.05) 0 1px, transparent 1px 14px),
-      linear-gradient(180deg, #1b2735 0%, #0d1520 70%);
-  }
-  .cam-machine { position: absolute; left: 12%; right: 12%; bottom: 22%; height: 34%; }
-  .cam-machine-body {
-    position: absolute; inset: 0;
-    background: linear-gradient(180deg, #4a5568, #2c3646);
-    border-radius: 2px;
-  }
-  .cam-chuck {
-    position: absolute; left: 4%; top: 50%; width: 22%; height: 140%;
-    transform: translateY(-50%);
-    display: grid; place-items: center;
-  }
-  .cam-workpiece {
-    width: 78%; height: 78%; border-radius: 50%;
-    background: conic-gradient(from 0deg, #c7ceda 0deg 25deg, #6b7688 25deg 50deg, #c7ceda 50deg 75deg, #6b7688 75deg 100deg, #c7ceda 100deg 125deg, #6b7688 125deg 150deg, #c7ceda 150deg 175deg, #6b7688 175deg 200deg, #c7ceda 200deg 225deg, #6b7688 225deg 250deg, #c7ceda 250deg 275deg, #6b7688 275deg 300deg, #c7ceda 300deg 325deg, #6b7688 325deg 360deg);
-    animation: cam-spin 0.5s linear infinite;
-  }
-  .cam-carriage {
-    position: absolute; bottom: -12%; width: 9%; height: 60%;
-    background: linear-gradient(180deg, #eab54a, #b9860f);
-    border-radius: 1px;
-    animation: cam-carriage 5s ease-in-out infinite alternate;
+    width: 100%; height: 100%;
+    object-fit: cover;
+    display: block;
   }
   .cam-tag {
     position: absolute; left: 4px; bottom: 3px;
     font-family: var(--font-mono); font-size: 7px; letter-spacing: 0.02em;
-    color: rgba(255,255,255,0.75); text-shadow: 0 1px 1px rgba(0,0,0,0.6);
+    color: rgba(255,255,255,0.85); text-shadow: 0 1px 1px rgba(0,0,0,0.7);
   }
   @keyframes cam-blink { 0%, 45% { opacity: 1; } 50%, 95% { opacity: 0.25; } 100% { opacity: 1; } }
-  @keyframes cam-spin { to { transform: rotate(360deg); } }
-  @keyframes cam-carriage { 0% { left: 26%; } 100% { left: 66%; } }
   @media (prefers-reduced-motion: reduce) {
-    .cam-workpiece, .cam-carriage, .cam-live-dot { animation: none; }
+    .cam-live-dot { animation: none; }
   }
 
   /* ---------- Line screen (per-line monitor strip + stage) ---------- */
@@ -904,12 +878,9 @@
           '<div class="mcard-head"><svg class="mcard-icon" viewBox="0 0 24 24">' + ICONS.cncvideo + "</svg>" +
           '<span class="mcard-title">' + vp.title + '</span>' +
           '<span class="cam-live"><span class="cam-live-dot"></span>LIVE</span></div>' +
-          '<div class="cam-frame"><div class="cam-scene">' +
-          '<div class="cam-bg"></div>' +
-          '<div class="cam-machine"><div class="cam-machine-body"></div>' +
-          '<div class="cam-chuck"><div class="cam-workpiece"></div></div>' +
-          '<div class="cam-carriage"></div></div>' +
-          '</div><div class="cam-tag">' + vp.tag + "</div></div>";
+          '<div class="cam-frame">' +
+          '<video src="' + vp.src + '" autoplay muted loop playsinline></video>' +
+          '<div class="cam-tag">' + vp.tag + "</div></div>";
         stripEl.appendChild(vcard);
       }
     });
@@ -1142,7 +1113,7 @@
         { id: "air", label: "エア圧", unit: "MPa", base: 0.52, dp: 2 }
       ] }
     ],
-    videoPanel: { afterId: "safety", title: "CNC旋盤仕上げ工程", tag: "CAM-03" },
+    videoPanel: { afterId: "safety", title: "CNC旋盤仕上げ工程", tag: "CAM-03", src: "CNC_Senban_Loop.mp4" },
     stations: [
       { id: "in", label: "投入" },
       { id: "rough", label: "粗加工" },
