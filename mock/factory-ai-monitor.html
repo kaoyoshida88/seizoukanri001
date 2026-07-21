@@ -310,6 +310,7 @@
     width: 168px; height: 100px;
     overflow: hidden;
     padding: 0;
+    cursor: pointer;
   }
   .node.has-video video {
     position: absolute; inset: 0;
@@ -317,6 +318,39 @@
     object-fit: cover;
     display: block;
   }
+
+  /* ---------- Video panel zoom (click to enlarge within the schematic area) ---------- */
+  .line-body.has-zoomed .rail,
+  .line-body.has-zoomed .flow-dot {
+    display: none;
+  }
+  .line-body.has-zoomed .stations {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: stretch;
+    justify-content: center;
+    gap: 0;
+    z-index: 5;
+  }
+  .line-body.has-zoomed .stations > *:not(.zoomed) {
+    display: none;
+  }
+  .station.has-video.zoomed {
+    width: 100%;
+    height: 100%;
+    gap: 0;
+  }
+  .station.has-video.zoomed .node.has-video {
+    width: 100%;
+    height: 100%;
+  }
+  .station.has-video.zoomed .station-label,
+  .station.has-video.zoomed .station-sub {
+    display: none;
+  }
+  .station.has-video.zoomed .cam-tag { font-size: 12px; }
+  .station.has-video.zoomed .cam-live-dot { width: 8px; height: 8px; }
   .station.critical .node {
     border-color: var(--critical); color: var(--critical); background: var(--critical-soft);
     box-shadow: 0 0 0 5px color-mix(in srgb, var(--critical) 16%, transparent);
@@ -836,6 +870,7 @@
   function createLine(cfg) {
     var root = document.querySelector('.line-screen[data-line-screen="' + cfg.key + '"]');
     var stripEl = root.querySelector(".monitor-strip");
+    var lineBodyEl = root.querySelector(".line-body");
     var stationsEl = root.querySelector(".stations");
     var logBodyEl = root.querySelector(".log-body");
     var proposalEl = document.getElementById("proposal-" + cfg.key);
@@ -881,6 +916,14 @@
           '<div class="node' + (s.video ? " has-video" : "") + '">' + nodeInner + "</div>" +
           '<div class="station-label">' + s.label + '</div>' +
           '<div class="station-sub" data-station-sub="' + s.id + '"></div>';
+        if (s.video) {
+          el.querySelector(".node").addEventListener("click", function () {
+            var wasZoomed = el.classList.contains("zoomed");
+            stationsEl.querySelectorAll(".station.zoomed").forEach(function (z) { z.classList.remove("zoomed"); });
+            el.classList.toggle("zoomed", !wasZoomed);
+            lineBodyEl.classList.toggle("has-zoomed", !wasZoomed);
+          });
+        }
       }
       stationsEl.appendChild(el);
     });
