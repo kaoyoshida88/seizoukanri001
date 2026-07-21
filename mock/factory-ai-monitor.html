@@ -450,7 +450,8 @@
   .btn-ghost { background: var(--surface-2); color: var(--ink-muted); border: 1px solid var(--border); }
   .btn-ghost:hover { color: var(--ink); }
 
-  .dock-main { display: flex; align-items: center; gap: 14px; padding: 12px 20px; min-height: 66px; }
+  .dock-main { display: grid; grid-template-columns: 1.4fr 1fr; column-gap: 14px; align-items: center; padding: 12px 20px; min-height: 66px; }
+  .dock-left { display: flex; align-items: center; gap: 14px; min-width: 0; }
   .mascot-wrap { position: relative; flex: none; width: 96px; height: 90px; }
   #mascot { width: 96px; height: 90px; image-rendering: pixelated; display: block; }
   .mascot-ring {
@@ -467,6 +468,24 @@
   .dock-name .live-dot { width: 5px; height: 5px; border-radius: 50%; background: var(--success); }
   .dock-msg { font-size: 13.5px; font-weight: 600; line-height: 1.4; text-wrap: balance; }
   .dock-msg .type-cursor { display: inline-block; width: 6px; height: 13px; background: var(--ink-muted); margin-left: 2px; vertical-align: -2px; animation: blink-dot .8s infinite; }
+
+  /* ---------- Dock chat: free-text consultation with the AI agent ---------- */
+  .dock-chat { display: flex; gap: 8px; }
+  .dock-chat-input {
+    flex: 1; min-width: 0;
+    padding: 9px 12px; border-radius: 7px;
+    border: 1px solid var(--border); background: var(--surface-2);
+    color: var(--ink); font-size: 13px; font-family: inherit;
+  }
+  .dock-chat-input::placeholder { color: var(--ink-muted); }
+  .dock-chat-input:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+  .dock-chat-send {
+    flex: none; border: none; border-radius: 7px; padding: 0 16px;
+    font-size: 12.5px; font-weight: 700; cursor: pointer; font-family: inherit;
+    background: var(--accent); color: #fff; transition: filter .15s, opacity .15s;
+  }
+  .dock-chat-send:hover { filter: brightness(1.08); }
+  .dock-chat-send[disabled] { opacity: 0.5; cursor: default; }
 
   @media (prefers-reduced-motion: reduce) {
     .flow-dot, .station.critical .node, .overall-pill.critical .dot, .mcard.critical .mcard-status,
@@ -720,14 +739,20 @@
       </div>
     </div>
     <div class="dock-main">
-      <div class="mascot-wrap" id="mascot-wrap">
-        <canvas id="mascot" width="16" height="15"></canvas>
-        <div class="mascot-ring"></div>
+      <div class="dock-left">
+        <div class="mascot-wrap" id="mascot-wrap">
+          <canvas id="mascot" width="16" height="15"></canvas>
+          <div class="mascot-ring"></div>
+        </div>
+        <div class="dock-text">
+          <div class="dock-name"><span class="live-dot"></span><span id="dock-name-text">AIエージェント ― 監視アシスタント</span></div>
+          <div class="dock-msg" id="dock-msg">起動しています…</div>
+        </div>
       </div>
-      <div class="dock-text">
-        <div class="dock-name"><span class="live-dot"></span><span id="dock-name-text">AIエージェント ― 監視アシスタント</span></div>
-        <div class="dock-msg" id="dock-msg">起動しています…</div>
-      </div>
+      <form class="dock-chat" id="dock-chat-form">
+        <input type="text" id="dock-chat-input" class="dock-chat-input" placeholder="AIエージェントに相談する…" autocomplete="off" />
+        <button type="submit" id="dock-chat-send" class="dock-chat-send">送信</button>
+      </form>
     </div>
   </div>
 </div>
@@ -1548,6 +1573,32 @@
       });
     });
   };
+
+  /* ---------------- Dock chat: free-text consultation with the AI agent ---------------- */
+  var DOCK_CHAT_REPLIES = [
+    "承知しました。現在の稼働状況を確認し、必要であれば追加の対処案をご提案します。",
+    "ご相談内容を記録しました。関連データを確認のうえ、追ってご報告します。",
+    "確認しました。関連する監視項目を優先的にチェックし、異常の兆候がないか確認します。",
+    "承知しました。担当チームへ情報を連携し、対応状況を随時お知らせします。"
+  ];
+  var dockChatForm = document.getElementById("dock-chat-form");
+  var dockChatInput = document.getElementById("dock-chat-input");
+  dockChatForm.addEventListener("submit", function (e) {
+    e.preventDefault();
+    var text = dockChatInput.value.trim();
+    if (!text) return;
+    var c = lineControllers[activeLineKey];
+    if (!c) return;
+    dockChatInput.value = "";
+    var prevMascotState = c.mascotState;
+    c.logEvent("ok", "相談", text);
+    c.setMascot("busy");
+    c.after(900 + Math.random() * 500, function () {
+      var reply = DOCK_CHAT_REPLIES[Math.floor(Math.random() * DOCK_CHAT_REPLIES.length)];
+      c.logEvent("ok", "AIエージェント", reply);
+      c.setMascot(prevMascotState);
+    });
+  });
 
   /* ---------------- Tabs & top-level controls ---------------- */
   document.querySelectorAll(".line-tab").forEach(function (btn) {
