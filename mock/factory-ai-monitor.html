@@ -914,6 +914,23 @@
   var overallText = document.getElementById("overall-text");
   var breadcrumbEl = document.getElementById("breadcrumb");
 
+  /* ---------------- Popup video playback (separate window, auto-close on end) ---------------- */
+  function openVideoPopup(relSrc, title) {
+    var absSrc = new URL(relSrc, document.baseURI).href;
+    var w = window.open("", "_blank", "width=640,height=420");
+    if (!w) return;
+    w.document.title = title || "動画再生";
+    var style = w.document.createElement("style");
+    style.textContent = "html,body{margin:0;height:100%;background:#000;}video{width:100%;height:100%;object-fit:contain;display:block;}";
+    w.document.head.appendChild(style);
+    var video = w.document.createElement("video");
+    video.src = absSrc;
+    video.autoplay = true;
+    video.controls = true;
+    video.addEventListener("ended", function () { w.close(); });
+    w.document.body.appendChild(video);
+  }
+
   var activeLineKey = null;
   var lineControllers = {};
 
@@ -1400,6 +1417,9 @@
     c.setMascot("busy");
     c.logEvent("ok", "承認", "最適化案が承認されました。TECHSと連携し自動適用します。");
     c.say("最適化案を適用しています…");
+
+    openVideoPopup("HUD_interface_tracking_system_re%E2%80%A6_202609052354.mp4", "HUDトラッキング映像 ― 検査工程確認");
+    c.logEvent("ok", "映像確認", "HUDインターフェースのトラッキング映像を別ウィンドウで再生し、検査工程の挙動を確認しています。");
 
     c.after(LOG_STEP * 1, function () {
       c.proposalItems[0].classList.add("done");
