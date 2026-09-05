@@ -926,9 +926,11 @@
     var video = w.document.createElement("video");
     video.src = absSrc;
     video.autoplay = true;
+    video.muted = true; // browsers block unmuted autoplay without a direct user gesture on the video itself
     video.controls = true;
     video.addEventListener("ended", function () { w.close(); });
     w.document.body.appendChild(video);
+    video.play().catch(function () {});
   }
 
   var activeLineKey = null;
