@@ -917,7 +917,11 @@
   /* ---------------- Popup video playback (separate window, auto-close on end) ---------------- */
   function openVideoPopup(relSrc, title) {
     var absSrc = new URL(relSrc, document.baseURI).href;
-    var w = window.open("", "_blank", "width=640,height=420");
+    var w2 = Math.round((screen.availWidth || 1280) * 0.9);
+    var h2 = Math.round((screen.availHeight || 800) * 0.9);
+    var left = Math.round(((screen.availWidth || 1280) - w2) / 2);
+    var top = Math.round(((screen.availHeight || 800) - h2) / 2);
+    var w = window.open("", "_blank", "width=" + w2 + ",height=" + h2 + ",left=" + left + ",top=" + top);
     if (!w) return;
     w.document.title = title || "動画再生";
     var style = w.document.createElement("style");
