@@ -183,7 +183,8 @@
     padding: 5px 12px;
     background: var(--surface);
     border-bottom: 1px solid var(--border);
-    overflow-x: auto;
+    overflow-x: auto; overflow-y: hidden;
+    transition: max-height .5s ease, padding-top .5s ease, padding-bottom .5s ease, opacity .35s ease, border-color .5s ease;
   }
   .line-tab {
     display: flex; align-items: center; gap: 6px;
@@ -213,7 +214,8 @@
     padding: 12px 20px;
     background: var(--surface);
     border-bottom: 1px solid var(--border);
-    overflow-x: auto;
+    overflow-x: auto; overflow-y: hidden;
+    transition: max-height .5s ease, padding-top .5s ease, padding-bottom .5s ease, opacity .35s ease, border-color .5s ease;
   }
   .mcard {
     position: relative;
@@ -276,7 +278,10 @@
     padding: 16px 20px;
     overflow: hidden;
     min-height: 0;
+    transition: grid-template-columns .6s ease, gap .6s ease;
   }
+  /* ---------- Theater mode: line1 approve — schematic panel takes over the stage ---------- */
+  .stage.theater-stage { grid-template-columns: 1fr 0fr; gap: 0; }
   .panel {
     background: var(--surface);
     border: 1px solid var(--border);
@@ -284,7 +289,9 @@
     display: flex; flex-direction: column;
     min-height: 0;
     box-shadow: var(--shadow);
+    transition: opacity .35s ease;
   }
+  .panel.theater-hide { opacity: 0; overflow: hidden; pointer-events: none; }
   .panel-head {
     padding: 12px 16px 10px;
     border-bottom: 1px solid var(--border);
@@ -294,16 +301,17 @@
   .panel-head .sub { font-size: 11.5px; color: var(--ink-muted); }
 
   /* line schematic */
-  .line-body { flex: 1; min-height: 0; padding: 30px 26px; display: flex; align-items: center; position: relative; overflow: auto; }
-  .rail { position: absolute; left: 60px; right: 60px; top: 50%; height: 2px; background: var(--border); transform: translateY(-50%); }
+  .line-body { flex: 1; min-height: 0; padding: 30px 26px; display: flex; align-items: center; position: relative; overflow: auto; transition: padding .5s ease; }
+  .rail { position: absolute; left: 60px; right: 60px; top: 50%; height: 2px; background: var(--border); transform: translateY(-50%); transition: opacity .3s ease; }
   .flow-dot {
     position: absolute; top: 50%; width: 6px; height: 6px; margin-top: -3px; border-radius: 50%;
     background: var(--accent); opacity: 0.55;
     animation: flow 3.4s linear infinite;
+    transition: opacity .3s ease;
   }
   @keyframes flow { from { left: 60px; } to { left: calc(100% - 66px); } }
-  .stations { position: relative; display: flex; justify-content: space-between; align-items: center; width: 100%; z-index: 1; gap: 10px; }
-  .station { display: flex; flex-direction: column; align-items: center; gap: 8px; width: 108px; flex: none; }
+  .stations { position: relative; display: flex; justify-content: space-between; align-items: center; width: 100%; z-index: 1; gap: 10px; transition: gap .5s ease; }
+  .station { display: flex; flex-direction: column; align-items: center; gap: 8px; width: 108px; flex: none; transition: width .5s ease, opacity .4s ease, margin .5s ease; }
   .node {
     width: 56px; height: 56px; border-radius: 10px;
     background: var(--surface-2); border: 1.5px solid var(--border);
@@ -318,6 +326,7 @@
     overflow: hidden;
     padding: 0;
     cursor: pointer;
+    transition: width .5s ease, height .5s ease;
   }
   .node.has-video video {
     position: absolute; inset: 0;
@@ -358,6 +367,17 @@
   }
   .station.has-video.zoomed .cam-tag { font-size: 12px; }
   .station.has-video.zoomed .cam-live-dot { width: 8px; height: 8px; }
+
+  /* ---------- Theater zoom: line1 approve — inspection video gradually fills the schematic area ---------- */
+  .line-body.theater-zoom { padding: 0; align-items: stretch; }
+  .line-body.theater-zoom .rail,
+  .line-body.theater-zoom .flow-dot { opacity: 0; }
+  .line-body.theater-zoom .stations { gap: 0; align-items: stretch; }
+  .line-body.theater-zoom .station:not(.theater-grow) { width: 0; opacity: 0; margin: 0; }
+  .station.theater-grow { flex: 1 1 auto; width: 100%; }
+  .station.theater-grow .node.has-video { width: 100%; height: 100%; border-radius: 12px; }
+  .station.theater-grow .station-label,
+  .station.theater-grow .station-sub { display: none; }
   .station.critical .node {
     border-color: var(--critical); color: var(--critical); background: var(--critical-soft);
     box-shadow: 0 0 0 5px color-mix(in srgb, var(--critical) 16%, transparent);
@@ -914,27 +934,89 @@
   var overallText = document.getElementById("overall-text");
   var breadcrumbEl = document.getElementById("breadcrumb");
 
-  /* ---------------- Popup video playback (separate window, auto-close on end) ---------------- */
-  function openVideoPopup(relSrc, title) {
-    var absSrc = new URL(relSrc, document.baseURI).href;
-    var w2 = Math.round((screen.availWidth || 1280) * 0.9);
-    var h2 = Math.round((screen.availHeight || 800) * 0.9);
-    var left = Math.round(((screen.availWidth || 1280) - w2) / 2);
-    var top = Math.round(((screen.availHeight || 800) - h2) / 2);
-    var w = window.open("", "_blank", "width=" + w2 + ",height=" + h2 + ",left=" + left + ",top=" + top);
-    if (!w) return;
-    w.document.title = title || "動画再生";
-    var style = w.document.createElement("style");
-    style.textContent = "html,body{margin:0;height:100%;background:#000;}video{width:100%;height:100%;object-fit:contain;display:block;}";
-    w.document.head.appendChild(style);
-    var video = w.document.createElement("video");
-    video.src = absSrc;
-    video.autoplay = true;
-    video.muted = true; // browsers block unmuted autoplay without a direct user gesture on the video itself
-    video.controls = true;
-    video.addEventListener("ended", function () { w.close(); });
-    w.document.body.appendChild(video);
-    video.play().catch(function () {});
+  /* ---------------- Smooth collapse/expand (measures natural height so the transition is accurate) ---------------- */
+  function setCollapsed(el, collapsed) {
+    if (collapsed) {
+      el.style.maxHeight = el.scrollHeight + "px";
+      el.getBoundingClientRect(); // force layout so the browser sees the start height before animating
+      requestAnimationFrame(function () {
+        el.style.maxHeight = "0px";
+        el.style.paddingTop = "0px";
+        el.style.paddingBottom = "0px";
+        el.style.opacity = "0";
+        el.style.borderColor = "transparent";
+        el.style.pointerEvents = "none";
+      });
+    } else {
+      el.style.pointerEvents = "";
+      el.style.paddingTop = "";
+      el.style.paddingBottom = "";
+      el.style.opacity = "";
+      el.style.borderColor = "";
+      el.style.maxHeight = el.scrollHeight + "px";
+      el.addEventListener("transitionend", function done(ev) {
+        if (ev.propertyName !== "max-height") return;
+        el.removeEventListener("transitionend", done);
+        el.style.maxHeight = "";
+      });
+    }
+  }
+
+  /* ---------------- Theater mode (line1 approve): the schematic panel takes over the window,
+     the inspection video grows to fill it and switches to the HUD tracking recording, then it
+     all reverses once the recording finishes. ---------------- */
+  function playTheaterInspectionVideo(line, onDone) {
+    var screenEl = document.querySelector('.line-screen[data-line-screen="' + line.key + '"]');
+    var tabsEl = document.getElementById("line-tabs");
+    var stripEl = screenEl.querySelector(".monitor-strip");
+    var stageEl = screenEl.querySelector(".stage");
+    var lineBodyEl = screenEl.querySelector(".line-body");
+    var logPanel = stageEl.querySelectorAll(".panel")[1];
+    var inspectStation = screenEl.querySelector('.station[data-station="inspect"]');
+    var video = inspectStation.querySelector("video");
+    var originalSrc = video.getAttribute("src");
+
+    // Phase 1: the schematic area expands to fill the window; the tabs, KPI strip and event log shrink away.
+    setCollapsed(tabsEl, true);
+    setCollapsed(stripEl, true);
+    stageEl.classList.add("theater-stage");
+    logPanel.classList.add("theater-hide");
+
+    setTimeout(function () {
+      // Phase 2: the inspection video grows to fill the now full-window schematic area.
+      lineBodyEl.classList.add("theater-zoom");
+      inspectStation.classList.add("theater-grow");
+
+      setTimeout(function () {
+        // Phase 3: switch to the HUD tracking recording and play it through once.
+        video.loop = false;
+        video.muted = true; // required for autoplay without a fresh user gesture on the video itself
+        video.src = "HUD_interface_tracking_system_re%E2%80%A6_202609052354.mp4";
+        video.currentTime = 0;
+        video.play().catch(function () {});
+
+        video.addEventListener("ended", function onEnded() {
+          video.removeEventListener("ended", onEnded);
+
+          // Phase 4: restore the original preview clip.
+          video.src = originalSrc;
+          video.loop = true;
+          video.play().catch(function () {});
+
+          // Phase 5: shrink the video back down, then collapse the schematic area back to its normal size.
+          inspectStation.classList.remove("theater-grow");
+          lineBodyEl.classList.remove("theater-zoom");
+
+          setTimeout(function () {
+            logPanel.classList.remove("theater-hide");
+            stageEl.classList.remove("theater-stage");
+            setCollapsed(stripEl, false);
+            setCollapsed(tabsEl, false);
+            if (onDone) setTimeout(onDone, 600);
+          }, 550);
+        });
+      }, 650);
+    }, 50);
   }
 
   var activeLineKey = null;
@@ -1424,8 +1506,10 @@
     c.logEvent("ok", "承認", "最適化案が承認されました。TECHSと連携し自動適用します。");
     c.say("最適化案を適用しています…");
 
-    openVideoPopup("HUD_interface_tracking_system_re%E2%80%A6_202609052354.mp4", "HUDトラッキング映像 ― 検査工程確認");
-    c.logEvent("ok", "映像確認", "HUDインターフェースのトラッキング映像を別ウィンドウで再生し、検査工程の挙動を確認しています。");
+    c.logEvent("ok", "映像確認", "生産ライン模式図を拡大し、HUDインターフェースのトラッキング映像で検査工程の挙動を確認しています。");
+    playTheaterInspectionVideo(c, function () {
+      c.logEvent("ok", "映像確認", "映像確認が完了し、通常表示に戻りました。");
+    });
 
     c.after(LOG_STEP * 1, function () {
       c.proposalItems[0].classList.add("done");
