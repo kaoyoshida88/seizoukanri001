@@ -962,9 +962,46 @@
     }
   }
 
+  /* ---------------- Seamless two-part playback: hands off from clip 1 to clip 2 just before
+     clip 1 ends (clip 2 is pre-buffered and already rolling underneath) so the cut reads as a
+     single continuous recording rather than two separate video loads. ---------------- */
+  function playSeamlessPair(container, src1, src2, onAllEnded) {
+    var v1 = document.createElement("video");
+    var v2 = document.createElement("video");
+    [v1, v2].forEach(function (v) {
+      v.muted = true; // required for autoplay without a fresh user gesture on the video itself
+      v.playsInline = true;
+      v.preload = "auto";
+    });
+    v1.src = src1;
+    v2.src = src2;
+    v2.style.opacity = "0";
+    container.appendChild(v1);
+    container.appendChild(v2);
+
+    var handedOff = false;
+    function handOff() {
+      if (handedOff) return;
+      handedOff = true;
+      v2.play().catch(function () {});
+      v2.style.opacity = "1";
+      v1.style.opacity = "0";
+    }
+    v1.addEventListener("timeupdate", function () {
+      if (!handedOff && v1.duration && v1.duration - v1.currentTime < 0.28) handOff();
+    });
+    v1.addEventListener("ended", handOff); // fallback if timeupdate never fires close enough to the end
+    v2.addEventListener("ended", function () {
+      v1.remove();
+      v2.remove();
+      if (onAllEnded) onAllEnded();
+    });
+    v1.play().catch(function () {});
+  }
+
   /* ---------------- Theater mode (line1 approve): the schematic panel takes over the window,
-     the inspection video grows to fill it and switches to the HUD tracking recording, then it
-     all reverses once the recording finishes. ---------------- */
+     the inspection video grows to fill it and switches to the HUD tracking recording (played as
+     two seamlessly-joined clips), then it all reverses once the recording finishes. ---------------- */
   function playTheaterInspectionVideo(line, onDone) {
     var screenEl = document.querySelector('.line-screen[data-line-screen="' + line.key + '"]');
     var tabsEl = document.getElementById("line-tabs");
@@ -973,8 +1010,8 @@
     var lineBodyEl = screenEl.querySelector(".line-body");
     var logPanel = stageEl.querySelectorAll(".panel")[1];
     var inspectStation = screenEl.querySelector('.station[data-station="inspect"]');
-    var video = inspectStation.querySelector("video");
-    var originalSrc = video.getAttribute("src");
+    var nodeEl = inspectStation.querySelector(".node.has-video");
+    var previewVideo = nodeEl.querySelector("video");
 
     // Phase 1: the schematic area expands to fill the window; the tabs, KPI strip and event log shrink away.
     setCollapsed(tabsEl, true);
@@ -988,33 +1025,30 @@
       inspectStation.classList.add("theater-grow");
 
       setTimeout(function () {
-        // Phase 3: switch to the HUD tracking recording and play it through once.
-        video.loop = false;
-        video.muted = true; // required for autoplay without a fresh user gesture on the video itself
-        video.src = "HUD_interface_tracking_system_re%E2%80%A6_202609052354.mp4";
-        video.currentTime = 0;
-        video.play().catch(function () {});
+        // Phase 3: switch to the HUD tracking recording (two clips, joined seamlessly) and play it through once.
+        previewVideo.pause();
+        playSeamlessPair(
+          nodeEl,
+          "HUD_animation_displaying_system_%E2%80%A6_202609061438.mp4",
+          "HUD_animation_displays_Japanese_%E2%80%A6_202609061440.mp4",
+          function () {
+            // Phase 4: restore the original preview clip.
+            previewVideo.currentTime = 0;
+            previewVideo.play().catch(function () {});
 
-        video.addEventListener("ended", function onEnded() {
-          video.removeEventListener("ended", onEnded);
+            // Phase 5: shrink the video back down, then collapse the schematic area back to its normal size.
+            inspectStation.classList.remove("theater-grow");
+            lineBodyEl.classList.remove("theater-zoom");
 
-          // Phase 4: restore the original preview clip.
-          video.src = originalSrc;
-          video.loop = true;
-          video.play().catch(function () {});
-
-          // Phase 5: shrink the video back down, then collapse the schematic area back to its normal size.
-          inspectStation.classList.remove("theater-grow");
-          lineBodyEl.classList.remove("theater-zoom");
-
-          setTimeout(function () {
-            logPanel.classList.remove("theater-hide");
-            stageEl.classList.remove("theater-stage");
-            setCollapsed(stripEl, false);
-            setCollapsed(tabsEl, false);
-            if (onDone) setTimeout(onDone, 600);
-          }, 550);
-        });
+            setTimeout(function () {
+              logPanel.classList.remove("theater-hide");
+              stageEl.classList.remove("theater-stage");
+              setCollapsed(stripEl, false);
+              setCollapsed(tabsEl, false);
+              if (onDone) setTimeout(onDone, 600);
+            }, 550);
+          }
+        );
       }, 650);
     }, 50);
   }
