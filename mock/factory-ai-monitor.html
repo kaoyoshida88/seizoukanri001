@@ -601,7 +601,7 @@
       <input id="f-pass" type="password" value="••••••••" />
     </div>
     <button class="login-submit" type="submit">ログイン</button>
-    <p class="login-note">これはデモ用モックです。入力内容に関わらずログインできます。<br>ログイン後、加工ライン3で約10秒後に監視シナリオが開始します。加工ライン1のタブを開くと、そちらのシナリオも開始します。</p>
+    <p class="login-note">これはデモ用モックです。入力内容に関わらずログインできます。<br>ログイン後、加工ライン3で約5秒後に監視シナリオが開始します。加工ライン1のタブを開くと、そちらのシナリオも開始します。</p>
   </form>
 </div>
 
@@ -1359,7 +1359,7 @@
       c.logEvent("ok", "監視", "6カテゴリ・全監視項目 正常範囲内。");
     });
 
-    c.after(10000, function () {
+    c.after(5000, function () {
       c.logEvent("warn", "検知", "CNC旋盤仕上げ工程で主軸電流の緩やかな上昇を検知。経過を追跡します。");
       c.say("CNC旋盤仕上げ工程の主軸電流にわずかな上昇傾向があります。経過を確認しています…");
       c.setStationCritical("cnc", true);
@@ -1373,7 +1373,7 @@
       c.animateMetric("okrate", 99.6, 97.1, 1, "%", rampDuration);
     });
 
-    c.after(10000 + LOG_STEP, function () {
+    c.after(5000 + LOG_STEP, function () {
       c.setCardState("equipment", true);
       c.setCardState("quality", true);
       c.setCardState("tools", true);
@@ -1384,7 +1384,7 @@
       c.say("異常を検知しました。刃具摩耗パターンの兆候と一致しています。対処案をまとめています…");
     });
 
-    c.after(10000 + LOG_STEP * 2, function () {
+    c.after(5000 + LOG_STEP * 2, function () {
       c.setEv("current", "+24%");
       c.setEv("vibe", "+100%");
       c.proposalEl.classList.add("open");
@@ -1502,7 +1502,7 @@
       c.logEvent("ok", "監視", "6カテゴリ・全監視項目 正常範囲内。");
     });
 
-    c.after(10000, function () {
+    c.after(5000, function () {
       c.logEvent("info", "検知", "検査工程(CAM-06)の直近30日の実績データを分析し、検査時間とミス率の改善余地を検出。分析を継続します。");
       c.say("検査工程の実績データを分析しています。改善余地を確認しています…");
       c.setStationInfo("inspect", true);
@@ -1511,7 +1511,7 @@
       c.setMetric("reordergain", "8 %", true);
     });
 
-    c.after(10000 + LOG_STEP, function () {
+    c.after(5000 + LOG_STEP, function () {
       c.setCardState("inspection", "info");
       c.setCardState("aimodel", "info");
       c.setCardState("sequence", "info");
@@ -1522,7 +1522,7 @@
       c.say("分析が完了しました。最適化案をまとめています…");
     });
 
-    c.after(10000 + LOG_STEP * 2, function () {
+    c.after(5000 + LOG_STEP * 2, function () {
       c.setEv("avgtime", "52.0秒/個");
       c.setEv("missrate", "1.80%");
       c.proposalEl.classList.add("open");
@@ -1655,7 +1655,7 @@
       c.logEvent("ok", "監視", "6カテゴリ・全監視項目 正常範囲内。");
     });
 
-    c.after(10000, function () {
+    c.after(5000, function () {
       c.logEvent("warn", "検知", "組立ロボットのグリップ圧力が緩やかに低下。エア配管の目詰まりの可能性を確認しています。");
       c.say("組立ロボットのグリップ圧力に低下傾向があります。エア配管の状態を確認しています…");
       c.setStationCritical("finish", true);
@@ -1674,7 +1674,7 @@
       c.animateMetric("okrate", 99.4, 95.2, 1, "%", rampDuration);
     });
 
-    c.after(10000 + LOG_STEP, function () {
+    c.after(5000 + LOG_STEP, function () {
       c.setCardState("coolant", true);
       c.setCardState("pump", true);
       c.setCardState("filter", true);
@@ -1688,7 +1688,7 @@
       c.say("エア配管の詰まりまたはコンプレッサー劣化の兆候と一致しています。対処案をまとめています…");
     });
 
-    c.after(10000 + LOG_STEP * 2, function () {
+    c.after(5000 + LOG_STEP * 2, function () {
       c.setEv("pressure", "-49%");
       c.setEv("filterDp", "+183%");
       c.proposalEl.classList.add("open");
